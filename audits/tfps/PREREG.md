@@ -43,3 +43,28 @@ Q3. With every test window kept, does TFPS beat PatchTST and DLinear trained in 
 ## Not claimed
 Nothing about other datasets, other horizons, or whether the authors' own runs had finite D. This tests the released
 code on ETTh1 only.
+
+## OWNER DECISIONS (Gustav, 2026-11-24 20:00 London, on design review r1)
+
+1. **Primary mechanism arm: D_gauss**, the paper's Alg.1 "random Gaussian distribution-initialized" D. Use the
+   paper's parameters if it states any; otherwise state the choice and its justification in the rewrite for the
+   review to check. D_zero stays as a control: under the released noisy router it is uniformly random routing, so
+   it is the "routing ignores the affinity" reference, not a "constant expert" arm. D_orth is dropped.
+2. **Add an eval-time noise-off arm** for D_gauss: training unchanged; at evaluation only, the router's added noise
+   is disabled so top-1 follows the affinity (`layers/SparseMoE.py:55-63`, by runtime patch only).
+3. **Add a direct routing measurement** on every trained D_gauss model, on the test set: fraction of patches where
+   the noisy router's top-1 equals argmax of the affinity, plus routing entropy, per seed. No extra training.
+4. **Baselines in the official PatchTST repo** (`patchtst_official` in `harness/repos.lock`): PatchTST and DLinear,
+   same split, batch 128, per-seed lr chosen on validation from {1e-4, 5e-4, 1e-3, 5e-3}. Confirm in the rewrite, by
+   sha256, which model/data/util files are byte-identical to TFPS's.
+5. **Horizons H=192 and H=336 only**, each with the released per-horizon TFPS config (`scripts/etth1.sh`:
+   H=192 4/4 experts lr 5e-4; H=336 4/4 experts lr 5e-3). Seeds as before.
+6. **Not now:** D_svd (k-means/SVD init), the PI→Linear ablation and H=96, an lr search for TFPS (TFPS keeps its
+   authors' tuned per-horizon config, which favours TFPS; a search would cost ~30 CPU-h), H=720. Any of these may be
+   proposed after round-1 results.
+7. Fix every other round-1 finding in the rewrite: keep-all test scoring crash, checkpoint-path collisions across
+   arms/seeds, verdict rules (Welch CI / TOST text as supplied by the statistics lens, an explicit INCONCLUSIVE, no
+   test-selected "best arm").
+8. **Timing (owner):** TFPS work starts at 03:00 London on 2026-11-25. Until then the queue row stays BLOCKED and the
+   loop works TIMEDISTILL-1; the reviewing chat flips the row to READY at 03:00. Then step (b): rewrite + review r2.
+   Expected budget for this scope: about 10 CPU-h.

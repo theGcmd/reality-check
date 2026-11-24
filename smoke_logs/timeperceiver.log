@@ -1,0 +1,49 @@
+CMD: python -u run.py --is_training 1 --root_path ./dataset/ETT-small/ --data_path ETTh1.csv --model_id ETTh1_384_96 --model TimePerceiver --data ETTh1 --features M --seq_len 384 --label_len 0 --pred_len 96 --enc_in 7 --des Exp --d_model 256 --d_ff 512 --itr 1 --num_latents 32 --latent_dim 64 --latent_d_ff 128 --dropout 0.2 --standard 0 --generalized 1 --use_latent 1 --num_latent_blocks 1 --patch_len 12 --separate_ratio 1 --train_epochs 1 --root_path /home/claude/reality-check/data/ett/ETT-small/
+Using cpu or mps
+Args in experiment:
+[1mBasic Config[0m
+  Model ID:           ETTh1_384_96        Model:              TimePerceiver       
+
+[1mData Loader[0m
+  Data:               ETTh1               Root Path:          /home/claude/reality-check/data/ett/ETT-small/
+  Data Path:          ETTh1.csv           Features:           M                   
+  Target:             OT                  
+  Checkpoints:        ./checkpoints/      
+
+[1mForecasting Task[0m
+  Seq Len:            384                 Label Len:          0                   
+  Pred Len:           96                  
+
+[1mModel Parameters[0m
+  Enc In:             7                   
+  n heads:            4                   
+
+[1mRun Parameters[0m
+  Num Workers:        4                   Itr:                1                   
+  Train Epochs:       1                   Batch Size:         128                 
+  Patience:           10                  Learning Rate:      0.0005              
+  Des:                Exp                 Loss:               MSE                 
+  Lradj:              type3               Use Amp:            0                   
+
+[1mGPU[0m
+  Use GPU:            1                   GPU:                0                   
+  Use Multi GPU:      0                   Devices:            0,1                 
+
+
+Start Training...
+Use GPU: cuda:0
+>>>>>>>start training : ETTh1_384_96_TimePerceiver_sl384_pl96_dm256_nl32_ld64_ul1_gf1_nh4_df512_pl12_qs1_sr1.0>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 8161
+val 2785
+test 2785
+We will warm up 5 epochs!
+Updating learning rate to 0.0001000
+Epoch: 1 cost time: 68.87828922271729
+Epoch: 1, Steps: 64 | Train Loss: 0.6486281 Vali Loss: 1.4445043 Test Loss: 0.7415569
+Validation loss decreased (inf --> 1.444504).  Saving model ...
+>>>>>>>testing : ETTh1_384_96_TimePerceiver_sl384_pl96_dm256_nl32_ld64_ul1_gf1_nh4_df512_pl12_qs1_sr1.0<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+test 2785
+test shape: (2785, 96, 7) (2785, 96, 7)
+test shape: (2785, 96, 7) (2785, 96, 7)
+mse:0.7415696978569031, mae:0.5878099799156189
+SMOKE_RC=0 SECONDS=98

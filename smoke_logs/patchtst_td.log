@@ -1,0 +1,63 @@
+CMD: python -u run.py --task_name long_term_forecast --is_training 1 --root_path ./dataset/ETT-small/ --data_path ETTh1.csv --model_id ETTh1_720_96 --model PatchTST --data ETTh1 --features M --seq_len 720 --label_len 48 --pred_len 96 --e_layers 1 --d_layers 1 --factor 3 --enc_in 7 --dec_in 7 --c_out 7 --des Exp --n_heads 16 --itr 1 --train_epochs 1 --root_path /home/claude/reality-check/data/ett/ETT-small/
+iTransformer
+torch.cuda.is_available:  False
+Args in experiment:
+[1mBasic Config[0m
+  Task Name:          long_term_forecast  Is Training:        1                   
+  Model ID:           ETTh1_720_96        Model:              PatchTST            
+
+[1mData Loader[0m
+  Data:               ETTh1               Root Path:          /home/claude/reality-check/data/ett/ETT-small/
+  Data Path:          ETTh1.csv           Features:           M                   
+  Target:             OT                  Freq:               h                   
+  Checkpoints:        ./checkpoints/      
+
+[1mForecasting Task[0m
+  Seq Len:            720                 Label Len:          48                  
+  Pred Len:           96                  Seasonal Patterns:  Monthly             
+  Inverse:            0                   
+
+[1mModel Parameters[0m
+  Top k:              5                   Num Kernels:        6                   
+  Enc In:             7                   Dec In:             7                   
+  C Out:              7                   d model:            512                 
+  n heads:            16                  e layers:           1                   
+  d layers:           1                   d FF:               2048                
+  Moving Avg:         25                  Factor:             3                   
+  Distil:             1                   Dropout:            0.1                 
+  Embed:              timeF               Activation:         gelu                
+  Output Attention:   0                   
+
+[1mRun Parameters[0m
+  Num Workers:        8                   Itr:                1                   
+  Train Epochs:       1                   Batch Size:         32                  
+  Patience:           5                   Learning Rate:      0.0001              
+  Des:                Exp                 Loss:               MSE                 
+  Lradj:              type1               Use Amp:            0                   
+
+[1mGPU[0m
+  Use GPU:            0                   GPU:                0                   
+  Use Multi GPU:      0                   Devices:            0,1,2,3             
+
+[1mDe-stationary Projector Params[0m
+  P Hidden Dims:      128, 128            P Hidden Layers:    2                   
+
+Use CPU
+Total Trainable Params: 7585376
+>>>>>>>start training : long_term_forecast_ETTh1_720_96_PatchTST_ETTh1_ftM_sl720_ll48_pl96_dm512_nh16_el1_dl1_df2048_expand2_dc4_fc3_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 7825
+val 2785
+test 2785
+	iters: 100, epoch: 1 | loss: 0.4530222
+	speed: 3.1893s/iter; left time: 465.6309s
+	iters: 200, epoch: 1 | loss: 0.4633434
+	speed: 3.0315s/iter; left time: 139.4483s
+Epoch: 1 cost time: 752.2914414405823
+Avg batch cost time: 3.0656954239825813
+Epoch: 1, Steps: 245 | Train Loss: 0.4719820 | Val Loss: 0.8832249 | Test Loss: 0.4285442
+Validation loss decreased (inf --> 0.883225).  Saving model ...
+Save ./checkpoints/long_term_forecast_ETTh1_720_96_PatchTST_ETTh1_ftM_sl720_ll48_pl96_dm512_nh16_el1_dl1_df2048_expand2_dc4_fc3_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone/checkpoint.pth
+Updating learning rate to 0.0001
+>>>>>>>testing : long_term_forecast_ETTh1_720_96_PatchTST_ETTh1_ftM_sl720_ll48_pl96_dm512_nh16_el1_dl1_df2048_expand2_dc4_fc3_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+test 2785
+SMOKE_RC=124 SECONDS=900

@@ -1,0 +1,1 @@
+timedistill timedistill scripts/long_term_forecast/ETTh1/iTransformer.sh 0 96 720

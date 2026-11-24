@@ -1,0 +1,225 @@
+CMD: python -u run.py --task_name long_term_forecast --is_training 1 --root_path ./data/ETT/ --data_path ETTh1.csv --model_id ETTh1_720_96 --model SARAF --data ETTh1 --features M --seq_len 720 --label_len 48 --pred_len 96 --learning_rate 0.001 --enc_in 7 --dec_in 7 --c_out 7 --des Exp --seed 2021 --itr 1 --topm 20 --train_epochs 1 --root_path /home/claude/reality-check/data/ett/ETT-small/
+False
+Args in experiment:
+[1mBasic Config[0m
+  Task Name:          long_term_forecast  Is Training:        1                   
+  Model ID:           ETTh1_720_96        Model:              SARAF               
+
+[1mData Loader[0m
+  Data:               ETTh1               Root Path:          /home/claude/reality-check/data/ett/ETT-small/
+  Data Path:          ETTh1.csv           Features:           M                   
+  Target:             OT                  Freq:               h                   
+  Checkpoints:        ./checkpoints/      
+
+[1mForecasting Task[0m
+  Seq Len:            720                 Label Len:          48                  
+  Pred Len:           96                  Seasonal Patterns:  Monthly             
+  Inverse:            0                   
+
+[1mModel Parameters[0m
+  Top k:              5                   Num Kernels:        6                   
+  Enc In:             7                   Dec In:             7                   
+  C Out:              7                   d model:            512                 
+  n heads:            8                   e layers:           2                   
+  d layers:           1                   d FF:               2048                
+  Moving Avg:         25                  Factor:             1                   
+  Distil:             1                   Dropout:            0.1                 
+  Embed:              fixed               Activation:         gelu                
+  Output Attention:   0                   
+
+[1mRun Parameters[0m
+  Num Workers:        10                  Itr:                1                   
+  Train Epochs:       1                   Batch Size:         8                   
+  Patience:           10                  Learning Rate:      0.001               
+  Des:                Exp                 Loss:               MSE                 
+  Lradj:              type1               Use Amp:            0                   
+
+[1mGPU[0m
+  Use GPU:            0                   GPU:                0                   
+  Use Multi GPU:      0                   Devices:            0,1,2,3             
+
+[1mDe-stationary Projector Params[0m
+  P Hidden Dims:      128, 128            P Hidden Layers:    2                   
+
+Use CPU
+[RetrievalTool.__init__] time_aware_weight = 0.5
+train 7825
+val 2785
+test 2785
+CUDA not available
+[INFO] Before prepare_dataset:
+
+================================================================================
+GPU Memory Allocation by Module (Device: cuda:0)
+================================================================================
+
+Module Name                                                  Memory (MB)     Percentage
+-------------------------------------------------------------------------------------
+                                                                      0.34    47.46%
+linear_x                                                              0.26    37.35%
+retrieval_pred                                                        0.04     5.02%
+retrieval_pred.0                                                      0.04     5.02%
+linear_pred_2                                                         0.04     5.02%
+retrieval_fusion_gate                                                 0.00     0.06%
+retrieval_fusion_gate.0                                               0.00     0.06%
+norm                                                                  0.00     0.01%
+-------------------------------------------------------------------------------------
+Total Parameters Memory                                               0.71   100.00%
+================================================================================
+
+Time-aware retrieval enabled. Steps per day: 24, Steps per year: 8760
+
+============================================================
+Dataset Stationarity Analysis
+============================================================
+  Total training samples: 7825
+  Samples analyzed: 7825 (100% of dataset)
+  Stationarity scores:
+    - Mean:   0.7041
+    - Std:    0.0796
+    - Min:    0.5306
+    - Max:    0.8529
+    - Median: 0.6997
+  Dataset characteristic: Highly Stationary (stable patterns)
+  Adaptive parameters:
+    - σ (temperature): 0.1240 (range: [0.05, 0.3])
+    - λ (MMR balance): 0.7224 (range: [0.3, 0.9])
+============================================================
+
+Doing Train Retrieval
+  0%|          | 0/8 [00:00<?, ?it/s]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3011
+[Time-Aware] Applied! sim_before: mean=0.0057, sim_after: mean=0.1534, diff=0.157077
+ 12%|█▎        | 1/8 [00:04<00:33,  4.78s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3148
+[Time-Aware] Applied! sim_before: mean=0.0117, sim_after: mean=0.1632, diff=0.160699
+ 25%|██▌       | 2/8 [00:07<00:21,  3.52s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3212
+[Time-Aware] Applied! sim_before: mean=0.0017, sim_after: mean=0.1615, diff=0.167637
+ 38%|███▊      | 3/8 [00:10<00:15,  3.20s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3248
+[Time-Aware] Applied! sim_before: mean=0.0013, sim_after: mean=0.1631, diff=0.168715
+ 50%|█████     | 4/8 [00:13<00:12,  3.19s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3232
+[Time-Aware] Applied! sim_before: mean=0.0009, sim_after: mean=0.1620, diff=0.172780
+ 62%|██████▎   | 5/8 [00:16<00:09,  3.15s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3192
+[Time-Aware] Applied! sim_before: mean=-0.0003, sim_after: mean=0.1594, diff=0.170886
+ 75%|███████▌  | 6/8 [00:19<00:06,  3.17s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3111
+[Time-Aware] Applied! sim_before: mean=-0.0015, sim_after: mean=0.1548, diff=0.167364
+ 88%|████████▊ | 7/8 [00:22<00:03,  3.01s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.2998
+[Time-Aware] Applied! sim_before: mean=0.0086, sim_after: mean=0.1542, diff=0.163107
+100%|██████████| 8/8 [00:24<00:00,  2.58s/it]100%|██████████| 8/8 [00:24<00:00,  3.02s/it]
+Doing Valid Retrieval
+  0%|          | 0/3 [00:00<?, ?it/s]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.2898
+[Time-Aware] Applied! sim_before: mean=-0.0055, sim_after: mean=0.1421, diff=0.168759
+ 33%|███▎      | 1/3 [00:05<00:10,  5.02s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3046
+[Time-Aware] Applied! sim_before: mean=0.0049, sim_after: mean=0.1548, diff=0.164535
+ 67%|██████▋   | 2/3 [00:08<00:03,  3.87s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3168
+[Time-Aware] Applied! sim_before: mean=0.0093, sim_after: mean=0.1630, diff=0.168116
+100%|██████████| 3/3 [00:10<00:00,  3.17s/it]100%|██████████| 3/3 [00:10<00:00,  3.51s/it]
+Doing Test Retrieval
+  0%|          | 0/3 [00:00<?, ?it/s]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3218
+[Time-Aware] Applied! sim_before: mean=0.0008, sim_after: mean=0.1613, diff=0.178834
+ 33%|███▎      | 1/3 [00:05<00:11,  5.77s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3248
+[Time-Aware] Applied! sim_before: mean=0.0045, sim_after: mean=0.1647, diff=0.176613
+ 67%|██████▋   | 2/3 [00:08<00:04,  4.11s/it]
+[Time-Aware] weight=0.5000
+[Time-Aware] Computing time bonus...
+[Time-Aware] time_bonus stats: min=0.0349, max=1.0000, mean=0.3251
+[Time-Aware] Applied! sim_before: mean=0.0029, sim_after: mean=0.1640, diff=0.171915
+100%|██████████| 3/3 [00:10<00:00,  3.22s/it]100%|██████████| 3/3 [00:10<00:00,  3.66s/it]
+
+[INFO] After prepare_dataset:
+CUDA not available
+
+================================================================================
+GPU Memory Allocation by Module (Device: cuda:0)
+================================================================================
+
+Module Name                                                  Memory (MB)     Percentage
+-------------------------------------------------------------------------------------
+                                                                      0.34    47.46%
+linear_x                                                              0.26    37.35%
+retrieval_pred                                                        0.04     5.02%
+retrieval_pred.0                                                      0.04     5.02%
+linear_pred_2                                                         0.04     5.02%
+retrieval_fusion_gate                                                 0.00     0.06%
+retrieval_fusion_gate.0                                               0.00     0.06%
+norm                                                                  0.00     0.01%
+-------------------------------------------------------------------------------------
+Total Parameters Memory                                               0.71   100.00%
+================================================================================
+
+>>>>>>>start training : long_term_forecast_ETTh1_720_96_SARAF_ETTh1_ftM_sl720_ll48_pl96_dm512_nh8_df2048_fc1_lr0.001_topm20_sd2021>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 7825
+val 2785
+test 2785
+
+[INFO] Starting training...
+CUDA not available
+	iters: 100, epoch: 1 | loss: 0.4357086
+	speed: 0.0174s/iter; left time: 15.3098s
+	iters: 200, epoch: 1 | loss: 0.3986501
+	speed: 0.0080s/iter; left time: 6.2178s
+	iters: 300, epoch: 1 | loss: 0.4398327
+	speed: 0.0071s/iter; left time: 4.8064s
+	iters: 400, epoch: 1 | loss: 0.3027762
+	speed: 0.0078s/iter; left time: 4.5089s
+	iters: 500, epoch: 1 | loss: 0.3326177
+	speed: 0.0055s/iter; left time: 2.6496s
+	iters: 600, epoch: 1 | loss: 0.4572172
+	speed: 0.0059s/iter; left time: 2.2587s
+	iters: 700, epoch: 1 | loss: 0.3582830
+	speed: 0.0071s/iter; left time: 1.9857s
+	iters: 800, epoch: 1 | loss: 0.3179621
+	speed: 0.0078s/iter; left time: 1.4114s
+	iters: 900, epoch: 1 | loss: 0.2786532
+	speed: 0.0075s/iter; left time: 0.5963s
+Epoch: 1 cost time: 7.337284803390503
+Epoch: 1, Steps: 979 | Train Loss: 0.3615614 Vali Loss: 0.7012571 Test Loss: 0.3762699
+Updating learning rate to 0.001
+
+[INFO] Epoch 1: Saving best model (vali_loss: 0.7012571)
+CUDA not available
+[INFO] After cache clear:
+CUDA not available
+>>>>>>>testing : long_term_forecast_ETTh1_720_96_SARAF_ETTh1_ftM_sl720_ll48_pl96_dm512_nh8_df2048_fc1_lr0.001_topm20_sd2021<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+test 2785
+test shape: (2785, 96, 7) (2785, 96, 7)
+test shape: (2785, 96, 7) (2785, 96, 7)
+mse:0.3761189877986908, mae:0.4044666886329651, rmse:0.6132854223251343, mape:9.332850456237793, mspe:34775.0859375, r2:0.6606554090976715
+SMOKE_RC=0 SECONDS=69

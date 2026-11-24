@@ -1,0 +1,8 @@
+CMD: python run.py --task_name long_term_forecast --is_training 1 --model_id ETTh1_informer_castnorm_96_96 --model Informer --data ETTh1 --root_path ./data/ETT/ --data_path ETTh1.csv --features M --freq h --seq_len 96 --label_len 48 --pred_len 96 --enc_in 7 --dec_in 7 --c_out 7 --d_model 512 --n_heads 8 --e_layers 2 --d_layers 1 --d_ff 2048 --dropout 0.1 --norm_type CAST-Norm --cast_norm_denorm recalib --enable_stcp --enable_casd --lambda1 1.0 --lambda2 1.0 --train_epochs 10 --batch_size 32 --learning_rate 0.0001 --train_epochs 1 --root_path /home/claude/reality-check/data/ett/ETT-small/
+Traceback (most recent call last):
+  File "/home/claude/reality-check/repos/castnorm/run.py", line 5, in <module>
+    from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
+  File "/home/claude/reality-check/repos/castnorm/exp/exp_long_term_forecasting.py", line 2, in <module>
+    from exp.exp_basic import Exp_Basic
+ModuleNotFoundError: No module named 'exp.exp_basic'
+SMOKE_RC=1 SECONDS=3

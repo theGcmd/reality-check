@@ -1,0 +1,9 @@
+tfps tfps scripts/etth1.sh
+sigma sigma script/SiGMA_ETTh1.sh
+gtr gtr scripts/GTR/etth1.sh
+timeperceiver timeperceiver scripts/ETT/TimePerceiver_ETTh1.sh
+renf renf scripts/etth1.sh
+timecapsule timecapsule scripts/etth1.sh
+dtmoe dtmoe scripts/ETTh1.sh
+kupbi kupbi/DLinear scripts/kup-bi_search.sh
+saraf saraf scripts/ETTh_720.sh

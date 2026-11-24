@@ -1,0 +1,69 @@
+CMD: python -u run.py --task_name long_term_forecast --is_training 1 --root_path ./dataset/ETT-small/ --data_path ETTh1.csv --model_id ETTh1_720_96 --model iTransformer --data ETTh1 --features M --seq_len 720 --pred_len 96 --e_layers 2 --enc_in 7 --dec_in 7 --c_out 7 --des Exp --d_model 256 --d_ff 256 --itr 1 --train_epochs 1 --root_path /home/claude/reality-check/data/ett/ETT-small/
+iTransformer
+torch.cuda.is_available:  False
+Args in experiment:
+[1mBasic Config[0m
+  Task Name:          long_term_forecast  Is Training:        1                   
+  Model ID:           ETTh1_720_96        Model:              iTransformer        
+
+[1mData Loader[0m
+  Data:               ETTh1               Root Path:          /home/claude/reality-check/data/ett/ETT-small/
+  Data Path:          ETTh1.csv           Features:           M                   
+  Target:             OT                  Freq:               h                   
+  Checkpoints:        ./checkpoints/      
+
+[1mForecasting Task[0m
+  Seq Len:            720                 Label Len:          48                  
+  Pred Len:           96                  Seasonal Patterns:  Monthly             
+  Inverse:            0                   
+
+[1mModel Parameters[0m
+  Top k:              5                   Num Kernels:        6                   
+  Enc In:             7                   Dec In:             7                   
+  C Out:              7                   d model:            256                 
+  n heads:            8                   e layers:           2                   
+  d layers:           1                   d FF:               256                 
+  Moving Avg:         25                  Factor:             1                   
+  Distil:             1                   Dropout:            0.1                 
+  Embed:              timeF               Activation:         gelu                
+  Output Attention:   0                   
+
+[1mRun Parameters[0m
+  Num Workers:        8                   Itr:                1                   
+  Train Epochs:       1                   Batch Size:         32                  
+  Patience:           5                   Learning Rate:      0.0001              
+  Des:                Exp                 Loss:               MSE                 
+  Lradj:              type1               Use Amp:            0                   
+
+[1mGPU[0m
+  Use GPU:            0                   GPU:                0                   
+  Use Multi GPU:      0                   Devices:            0,1,2,3             
+
+[1mDe-stationary Projector Params[0m
+  P Hidden Dims:      128, 128            P Hidden Layers:    2                   
+
+Use CPU
+Total Trainable Params: 1001312
+>>>>>>>start training : long_term_forecast_ETTh1_720_96_iTransformer_ETTh1_ftM_sl720_ll48_pl96_dm256_nh8_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 7825
+val 2785
+test 2785
+	iters: 100, epoch: 1 | loss: 0.4701732
+	speed: 0.0432s/iter; left time: 6.3118s
+	iters: 200, epoch: 1 | loss: 0.3559387
+	speed: 0.0386s/iter; left time: 1.7765s
+Epoch: 1 cost time: 9.773343324661255
+Avg batch cost time: 0.03501299060120874
+Epoch: 1, Steps: 245 | Train Loss: 0.4262507 | Val Loss: 0.7489220 | Test Loss: 0.3924803
+Validation loss decreased (inf --> 0.748922).  Saving model ...
+Save ./checkpoints/long_term_forecast_ETTh1_720_96_iTransformer_ETTh1_ftM_sl720_ll48_pl96_dm256_nh8_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone/checkpoint.pth
+Updating learning rate to 0.0001
+>>>>>>>testing : long_term_forecast_ETTh1_720_96_iTransformer_ETTh1_ftM_sl720_ll48_pl96_dm256_nh8_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_desExp_lr0.0001_bs32_lradjtype1_normNone<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+test 2785
+Avg batch cost time: 0.013457588174126366
+Max GPU memory usage: 0.0 GB
+Max CPU memory usage: 1.4035110473632812 GB
+test shape: (2785, 96, 7) (2785, 96, 7)
+mse:0.3920109272003174, mae:0.4233110845088959
+Inference time:  1.9789042472839355
+SMOKE_RC=0 SECONDS=19

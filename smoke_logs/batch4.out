@@ -1,0 +1,5 @@
+00:59:54 START timedistill
+01:00:11 END timedistill SMOKE_RC=1 SECONDS=17
+01:00:11 START patchtst_td
+01:15:11 END patchtst_td SMOKE_RC=124 SECONDS=900
+ALLDONE

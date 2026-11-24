@@ -1,0 +1,16 @@
+# name  url  commit   (third-party code under audit; cloned by harness/setup.sh, never edited)
+tfps https://github.com/syrGitHub/TFPS 83a11827e27e6617e8c8a8771f0a1dd7e10976a5
+timedistill https://github.com/LingFengGold/TimeDistill 08dedd3ebdf2cca0a2a9494111186bf090fde1d8
+gtr https://github.com/macovaseas/gtr d94161906151bdc0c94f4d21c2b0ca356aeb3135
+patchtst_official https://github.com/yuqinie98/PatchTST 204c21efe0b39603ad6e2ca640ef5896646ab1a9
+sigma https://github.com/cheonwoolee/SiGMA b4ac7c967f4a873c6908978230485125f71f6419
+dtmoe https://github.com/andone-07/Dynamic-TMoE 3e4123530d40c8463cb9487992da49cd967fd9d7
+timeperceiver https://github.com/efficient-learning-lab/TimePerceiver 7e30cc07b51c709f408409fd60a34c81ae8990be
+timecapsule https://github.com/Luoauoa/TimeCapsule 30a333f4cf129cd88f5d398e427cdfcfe518a39a
+kupbi https://github.com/yihannnnn/KUP-BI da20530642844c53c7c6f965679ba364343c83b3
+saraf https://github.com/ShiqiaoZhou/SARAF 7b49aa8aabb38e8fe63adbc3146b1890958bf3ca
+renf https://github.com/luoauoa/renf c232ec5998ea82c29e7a22cfc0f41828261aa5e4
+castnorm https://github.com/xhhmacau/CAST_Norm f3962413f23323479056713f0effde1c5df8d04b
+# data
+ETDataset https://github.com/zhouhaoyi/ETDataset 1d16c8f4f943005d613b5bc962e9eeb06058cf07
+lai https://github.com/laiguokun/multivariate-time-series-data 7f402f185cc2435b5e66aed13a3b560ed142e023

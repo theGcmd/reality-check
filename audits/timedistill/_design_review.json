@@ -1,0 +1,244 @@
+{
+ "item": "TIMEDISTILL-1",
+ "step": "(a) design review, round 1",
+ "date_utc": "2026-11-24",
+ "prereg_reviewed": "audits/timedistill/PREREG.md at commit 88b9aaf (draft, not frozen)",
+ "round_verdict": "NOT_LICENSED",
+ "foregone": "not foregone: all verdicts reachable by construction (all 5 lenses)",
+ "note": "Lens outputs condensed by the session agent from five subagent JSON reports; severities and verdicts unchanged. Re-checked by the session agent: run.py:11-14 (fix_seed=2021; no use of args.seed in repo), timedistill utils/tools.py:13-23 (type1 halves; type3 x0.95; type4 = official type3), official utils/tools.py:18-19 and run_longExp.py:80,84 (patience 100, lradj type3), timedistill models/PatchTST.py:56,71-72 (attention and head dropout = configs.dropout). The \u00b10.004/5-seed citation was searched by two lenses in arXiv v3 HTML and not found; not re-checked against the KDD camera-ready.",
+ "lenses": [
+  {
+   "lens": "foregone",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "lradj unspecified; harness default type1 halves lr every epoch (timedistill utils/tools.py:13-14, run.py:159), so '100 epochs' is nominal and P-official is undertrained (bias toward HEADLINE STANDS). Official default is type3 = const for epochs<3 then x0.9 (patchtst_official utils/tools.py:18-19, run_longExp.py:84); TimeDistill's 'type3' is a different rule (x0.95, tools.py:20-21); TimeDistill 'type4' (tools.py:22-23) equals official type3.",
+     "fix": "Freeze --lradj type4 and log per-epoch lr."
+    },
+    {
+     "severity": "blocking",
+     "issue": "P-official runs TSLib's PatchTST, not official: attention dropout = configs.dropout (models/PatchTST.py:56), head dropout = configs.dropout (:71-72) so 0.3 where official is 0; fixed sinusoidal PE vs learnable; no residual attention; one final BatchNorm vs per-sublayer; --fc_dropout/--head_dropout parsed (run.py:120-121) but unused; patch 16/8 hardcoded (:36) but matches.",
+     "fix": "Rename arm 'TSL-PatchTST at official hparams' or add an official-model arm (port official backbone into harness via wrapper); declare primary arm before running."
+    },
+    {
+     "severity": "major",
+     "issue": "Seeds cannot vary: run.py:11-14 hardcodes fix_seed=2021; --seed (run.py:179) is never read.",
+     "fix": "Pre-register a wrapper patch setting seed from argv; self-test that two seeds differ and 2021 reproduces unpatched."
+    },
+    {
+     "severity": "major",
+     "issue": "Thresholds ignore P-official seed variance; 0.004 band narrower than plausible seed spread; expected PatchTST value at L=720 (~0.42-0.44) sits on the boundaries.",
+     "fix": "Decide on d = P-official \u2212 0.429 with a combined-uncertainty band and minimum effect size."
+    },
+    {
+     "severity": "major",
+     "issue": "Patience/epochs 'to confirm': official patience 100 (run_longExp.py:80), train_epochs 100 (etth1.sh:41) => no early stop, best-val checkpoint.",
+     "fix": "Freeze patience 100, epochs 100, batch 128."
+    },
+    {
+     "severity": "minor",
+     "issue": "L=720 vs PatchTST's tuned 336; head_nf has no shape issue. Published 0.413/0.417 use drop_last=True on test (official data_factory.py:19), not comparable.",
+     "fix": "Primary at 720; optional non-verdict L=336 arm; mark published numbers context only."
+    },
+    {
+     "severity": "minor",
+     "issue": "Anchor validates only the released code path, not P-official's path.",
+     "fix": "Add a cheap P-official sanity check with pre-registered tolerance."
+    }
+   ],
+   "summary": "No verdict guaranteed or unreachable by construction (not FOREGONE), but lr schedule, model-file fidelity and hardcoded seed bias P-official toward HEADLINE STANDS and remove its variance."
+  },
+  {
+   "lens": "fairness",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "'0.429 \u00b1 0.004 (5 seeds, Table 8)' (PREREG.md:29-30) not found in arXiv v3 (2026-01-07): no \u00b1 or seed counts anywhere; Table 8 is a teacher ablation (ETTh1 0.428 iTransformer-teacher / 0.429 ModernTCN-teacher). Thresholds rest on an unsourced number.",
+     "fix": "Find the exact source (version/table) or drop it; set margins from our own seed spread or a fixed pre-declared delta."
+    },
+    {
+     "severity": "blocking",
+     "issue": "P-official is TSL's reimplementation (see foregone lens; also post-LN encoder Transformer_EncDec.py:34-51, patch embedding bias=False Embed.py:174).",
+     "fix": "Rename/scope the arm, or add an official-model arm; only that arm licenses 'official PatchTST'."
+    },
+    {
+     "severity": "major",
+     "issue": "lradj name collision and patience 100 (as foregone lens). Official train loader drop_last=True (official data_factory.py:30) vs TimeDistill False.",
+     "fix": "Freeze type4/patience 100/epochs 100/batch 128/lr 1e-4/dropout 0.3; declare train drop_last=False as harness property."
+    },
+    {
+     "severity": "major",
+     "issue": "seq_len 720 is TimeDistill's protocol ('For consistency, we maintain a fixed input length of 720 throughout all the experiments.' Table 1 caption), not PatchTST's (official etth1.sh seq_len 336). Paper A.1.4 says dropout 0.2; etth1.sh says 0.3.",
+     "fix": "Word claim as 'PatchTST's published ETTh1 hyperparameters (official etth1.sh) under TimeDistill's fixed input-720 protocol'; state script taken over paper text."
+    },
+    {
+     "severity": "major",
+     "issue": "PREREG.md:8 misattributes: paper never mentions drop_last (that is code, data_factory.py:20,25); the quote is about teachers: 'The teacher models are trained using their default configurations as reported in their respective papers.' (App. C). Paper does not say Table 1 baselines were rerun (inferred from run_scripts/train_teacher.sh). Confirmed: Table 12 PatchTST 0.428/0.476/0.543/0.546 (avg 0.498); TimeDistill 0.373/0.411/0.439/0.495 (0.429); TimeMixer 0.459.",
+     "fix": "Quote exact sentences; attribute drop_last to code; mark rerun as inferred."
+    },
+    {
+     "severity": "major",
+     "issue": "Released script mostly inherits Time-Series-Library defaults (TSL PatchTST_ETTh1.sh + run.py d_model 512/d_ff 2048/10 epochs; stale comment PatchTST.sh:24-25).",
+     "fix": "Phrase as what the released script does, no claim about intent."
+    },
+    {
+     "severity": "minor",
+     "issue": "Not re-running TimeDistill is acceptable (default teacher ModernTCN, Sec. 5.2, so 0.429 does not depend on PatchTST config), but 0.429 is a single reported run on other hardware; TimeDistill had an alpha/beta search (App. C), baselines got defaults.",
+     "fix": "State the asymmetry; keep the inconclusive band wide enough."
+    },
+    {
+     "severity": "minor",
+     "issue": "Seeds hardcoded (run.py:11-14).",
+     "fix": "Wrapper patch; keep 2021 for the anchor."
+    }
+   ],
+   "summary": "Framing of Table 1 numbers checks out; the \u00b10.004/5-seed basis is not in the arXiv text and P-official is TSL-PatchTST, so not licensed."
+  },
+  {
+   "lens": "leakage",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "Seed not settable (run.py:11-14, --seed unused).",
+     "fix": "Pre-registered wrapper patch; seed in setting string."
+    },
+    {
+     "severity": "blocking",
+     "issue": "lr schedule/patience unspecified; defaults type1/patience 5 cripple P-official; official = type3 (TimeDistill type4) + patience 100.",
+     "fix": "--lradj type4 --patience 100 --train_epochs 100 --batch_size 128 --learning_rate 1e-4."
+    },
+    {
+     "severity": "major",
+     "issue": "Budgets: P-official 100 epochs best-val; P-released 10 epochs; TimeDistill student lr 0.01, 100 epochs type1 patience 5 (run_scripts/train_student.sh:38-46), per-teacher alpha/beta (2/2 in train_student_iTransformer.sh:16,22 vs 1/1 in train_student.sh:16,22) with no recorded selection procedure.",
+     "fix": "Record asymmetry; identify which teacher/alpha/beta produced 0.429; optional budget-matched sensitivity arm (patience 5, type4)."
+    },
+    {
+     "severity": "minor",
+     "issue": "Test evaluated each epoch (exp/exp_long_term_forecasting.py:342-345) but selection on val only (:354, reload :364-365). No leakage found.",
+     "fix": "Pre-register that per-epoch test loss is never consulted; score = final test() line (:518-519)."
+    },
+    {
+     "severity": "minor",
+     "issue": "Splits clean: borders data_loader.py:52-55, scaler train-only (:63-66), drop_last False all splits (data_factory.py:20), test windows 2785/2689/2545/2161 at L=720; MSE on normalised scale (--inverse False, run.py:43). Official repo drops last test batch.",
+     "fix": "State counts in prereg."
+    },
+    {
+     "severity": "minor",
+     "issue": "Checkpoint setting string omits seed/dropout (run.py:234-257) => collisions; round-2 teacher loading globs [0] (exp:78).",
+     "fix": "Separate --checkpoints dir per arm/seed."
+    }
+   ],
+   "summary": "No test leakage in either path; blocking issues are the unsettable seed and the unpinned lr schedule/patience."
+  },
+  {
+   "lens": "statistics",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "3 seeds impossible as written (run.py:11-14).",
+     "fix": "Wrapper seed patch + self-test."
+    },
+    {
+     "severity": "blocking",
+     "issue": "No resume: training always starts at epoch 0 (exp_long_term_forecasting.py:153), only best state_dict saved (utils/tools.py:81-84); every single-horizon run (P-released ~2.1 h, P-official ~2.6 h) exceeds a 45-min foreground chunk.",
+     "fix": "Pre-register a resume wrapper (model, optimizer, epoch, EarlyStopping state, lr, RNG states) with an equivalence self-test (2+2 vs 4 epochs identical)."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Noise band source (\u00b10.004, 5 seeds, Table 8) not found in arXiv v3; Table 12 gives TimeDistill per-horizon only.",
+     "fix": "Source it or replace s_TD with observed P-official seed std."
+    },
+    {
+     "severity": "major",
+     "issue": "Bands lopsided and labels conflate 'baseline under-configured' with 'headline'.",
+     "fix": "F1: P-released \u2212 P-official > 0.015 and > 3\u00d7 P-official seed std. F2: d = P-official \u2212 0.429 with symmetric \u03b4: FALSIFIED / TIE / STANDS."
+    },
+    {
+     "severity": "major",
+     "issue": "Statistic undefined (what is averaged, straddling seeds).",
+     "fix": "A_s = mean over 4 H; P = mean_s A_s; s_P sample std; \u03b4 = max(0.004, 2\u00b7sqrt(s_P\u00b2/3 + s_TD\u00b2/5)); 'borderline' if within 0.5\u03b4 of an edge; seed count fixed."
+    },
+    {
+     "severity": "major",
+     "issue": "Anchor tolerance 0.015 unjustified; failure branch discards valid within-harness F1.",
+     "fix": "Also per-horizon within 0.03 of Table 12; on failure report F1, mark F2 NOT SCORED."
+    },
+    {
+     "severity": "major",
+     "issue": "lr schedule unpinned (type1 default).",
+     "fix": "Pin; patience 100 official, or patience 20 declared as cost deviation."
+    },
+    {
+     "severity": "minor",
+     "issue": "Head/FC dropout not expressible in TSL model.",
+     "fix": "List as fidelity gap or patch head_dropout via wrapper."
+    }
+   ],
+   "cost_estimate": "Measured here (2 threads): P-official (d16,e3,bs128,L720) ~95 s/epoch -> 100 epochs/horizon ~2.6 h, 3 seeds x 4 H ~32 h (~42-45 chunks). P-released ~750-780 s/epoch -> 1 seed x 4 H x 10 epochs ~8.4 h (~12-14 chunks). Total ~40 CPU h, ~55-60 sessions; impossible without resume. Patience 20 for P-official est. 10-15 h.",
+   "summary": "Verdicts reachable once band is symmetric and seed-based, but cannot run: seed ignored, no resume, unsourced noise band."
+  },
+  {
+   "lens": "answer_built_in",
+   "model": "fable",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "Unspecified lradj/patience; type1 default undertrains P-official (tilts to STANDS).",
+     "fix": "type4, patience 100, epochs 100, batch 128, lr 1e-4, val selection."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Decision band (0.004) far narrower than the anchor tolerance (0.015) the design accepts as harness offset; comparison side not re-run.",
+     "fix": "Preferred: re-run TimeDistill in round 1 with same seeds and decide on paired same-harness difference; else widen INCONCLUSIVE to \u00b10.015."
+    },
+    {
+     "severity": "blocking",
+     "issue": "'BASELINE UNDER-CONFIGURED if \u22640.433' scores a narrow TimeDistill win as the auditors' prior; conflates baseline gap with headline.",
+     "fix": "Two separate symmetric outcomes: (A) baseline gap, (B) headline FAILS/TIE/STANDS."
+    },
+    {
+     "severity": "major",
+     "issue": "Model file cannot express official config; bias direction unknown; any loss blamable on the port.",
+     "fix": "Declare primary arm in advance: P-official-CLI (released model, flags only) primary, P-faithful (official model class in harness) secondary; report both if they disagree."
+    },
+    {
+     "severity": "major",
+     "issue": "Seeds hardcoded.",
+     "fix": "Patch; 5 seeds to match TimeDistill."
+    },
+    {
+     "severity": "major",
+     "issue": "Tuning asymmetry: student lr 0.01, per-teacher alpha/beta; P-official untuned at L=720 (favours STANDS); citing 0.413 primes the opposite.",
+     "fix": "Primary at 720 untuned; state STANDS does not rule out tuned PatchTST; non-verdict L=336 arm; remove 0.413 as expectation."
+    },
+    {
+     "severity": "minor",
+     "issue": "1-seed anchor is weak; failure halts rather than reports.",
+     "fix": "Report per horizon vs Table 1; failed anchor is reported."
+    },
+    {
+     "severity": "minor",
+     "issue": "Only the average is pre-registered.",
+     "fix": "Mandatory per-horizon table."
+    }
+   ],
+   "summary": "Biases run both ways: lr schedule, TSL model file and untuned L=720 push toward STANDS; asymmetric verdict rule and 0.004 band vs 0.015 anchor tolerance push toward the auditors' prior."
+  }
+ ],
+ "decisions_needed": [
+  "Source of '0.429 \u00b1 0.004 (5 seeds)': not in arXiv v3. Provide the source, or approve replacing it with our own seed spread / a fixed delta.",
+  "PatchTST arm fidelity: (1) keep TSL-PatchTST with official flags and narrow the claim; (2) add a P-faithful arm (official PatchTST model class dropped into TimeDistill's harness via a wrapper); (3) both, primary declared in advance.",
+  "Budget: ~40 CPU h (~55-60 sessions) at official patience 100 + 1-seed anchor; options: accept, patience 20 as a declared cost deviation (~10-15 h for P-official), fewer seeds, or a GPU.",
+  "Re-run TimeDistill in round 1 (paired same-harness comparison, Fable lens) or keep reported value with a widened \u00b10.015 inconclusive band.",
+  "Optional non-verdict arms: L=336 sensitivity; budget-matched P-official (patience 5)."
+ ]
+}

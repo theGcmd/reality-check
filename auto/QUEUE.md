@@ -11,7 +11,7 @@ before anything is scored.
 | # | item | prereg | approved | status |
 |---|------|--------|----------|--------|
 | 1 | TFPS-1 — does TFPS's ETTh1 result depend on its uninitialised routing matrix, and does it survive same-harness PatchTST / DLinear with every test window kept? | `audits/tfps/PREREG.md` | yes | BLOCKED until 2026-11-25 03:00 London (owner timing). Owner decisions on r1 recorded in PREREG.md (OWNER DECISIONS 1-8); at 03:00 the reviewing chat sets READY, next step (b) rewrite + review r2 |
-| 2 | TIMEDISTILL-1 — does TimeDistill's ETTh1 average (0.429) beat PatchTST run with PatchTST's own published config in TimeDistill's harness? | `audits/timedistill/PREREG.md` | yes | READY (draft prereg; start with design review) |
+| 2 | TIMEDISTILL-1 — does TimeDistill's ETTh1 average (0.429) beat PatchTST run with PatchTST's own published config in TimeDistill's harness? | `audits/timedistill/PREREG.md` | yes | BLOCKED (design review r1 NOT_LICENSED, not foregone; owner decisions needed, see audits/timedistill/_design_review.json; then step (b) rewrite + review r2) |
 | 3 | GTR-SOLAR-1 — does GTR's Solar gain survive baselines given the same lr search GTR got? | to be written: `audits/gtr/PREREG.md` | yes | READY (first step: draft the prereg from the paper and code, then design review) |
 
 Interleaving: while an item is waiting on a long battery, the agent keeps to the first runnable row; it does not

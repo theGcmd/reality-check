@@ -10,7 +10,7 @@ before anything is scored.
 
 | # | item | prereg | approved | status |
 |---|------|--------|----------|--------|
-| 1 | TFPS-1 — does TFPS's ETTh1 result depend on its uninitialised routing matrix, and does it survive same-harness PatchTST / DLinear with every test window kept? | `audits/tfps/PREREG.md` | yes | READY (draft prereg; start with design review) |
+| 1 | TFPS-1 — does TFPS's ETTh1 result depend on its uninitialised routing matrix, and does it survive same-harness PatchTST / DLinear with every test window kept? | `audits/tfps/PREREG.md` | yes | BLOCKED (design review r1 NOT_LICENSED (FOREGONE); awaiting Gustav's arm decisions, see DIGEST) |
 | 2 | TIMEDISTILL-1 — does TimeDistill's ETTh1 average (0.429) beat PatchTST run with PatchTST's own published config in TimeDistill's harness? | `audits/timedistill/PREREG.md` | yes | READY (draft prereg; start with design review) |
 | 3 | GTR-SOLAR-1 — does GTR's Solar gain survive baselines given the same lr search GTR got? | to be written: `audits/gtr/PREREG.md` | yes | READY (first step: draft the prereg from the paper and code, then design review) |
 

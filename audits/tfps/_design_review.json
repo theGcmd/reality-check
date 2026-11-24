@@ -1,0 +1,323 @@
+{
+ "item": "TFPS-1",
+ "step": "(a) design review, round 1",
+ "date_utc": "2026-11-24",
+ "prereg_reviewed": "audits/tfps/PREREG.md at commit 3e62bbb (draft, not frozen)",
+ "round_verdict": "NOT_LICENSED (FOREGONE)",
+ "note": "Lens outputs condensed by the session agent from the five subagent JSON reports; severities and verdicts unchanged. Key code claims re-checked by the session agent: layers/SparseMoE.py:55-63 (noise added to router logits with no self.training guard), scripts/etth1.sh:77-89,133-145 (H=192: 4/4 experts lr 5e-4; H=336: 4/4 experts lr 5e-3), exp/exp_main.py:99,203,324 (3-way unpack that PatchTST/DLinear cannot satisfy).",
+ "lenses": [
+  {
+   "lens": "foregone",
+   "model": "session",
+   "verdict": "NOT_LICENSED (FOREGONE)",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "MECHANISM-INERT conjunct 'D_zero routing is constant' is false by construction: NoisyTopkRouter_Cluster adds randn*softplus(s) noise before top-1, also at eval, so uniform s => uniformly random expert per row (two router calls agree 6.4% at E=16, chance 6.25%). Verdict unreachable as written.",
+     "fix": "Correct code facts; replace conjunct with 'affinity s constant (max-min<1e-6) and D stays exactly 0', logged for both EDESC instances."
+    },
+    {
+     "severity": "blocking",
+     "issue": "D_orth is not a working-mechanism arm: router noise (std~softplus(1/E)) swamps spread of s; P(top1==argmax s) 0.056-0.085 at E=16 (chance 0.0625); with top_k=1 gate weight is always 1 so s gets no forecast-loss gradient. Null between D_zero and D_orth is close to built in.",
+     "fix": "Pre-registered manipulation check (agreement with argmax s, routing entropy); if within chance+0.05 report 'MECHANISM NOT EXERCISED'; optional arm with router noise off / argmax routing."
+    },
+    {
+     "severity": "major",
+     "issue": "D_zero is a fixed point (grad wrt D exactly 0 incl. KL and both constraint losses; Adam no weight decay) => D_zero is a random-routing, no-clustering-signal control.",
+     "fix": "Label it so; log ||D|| at end."
+    },
+    {
+     "severity": "major",
+     "issue": "Cluster input reshaped without permute (backbone_cluster_time.py:77 vs 81-83; frequency :79 vs 83-85): row j of s is not patch j.",
+     "fix": "State in code facts; scope Q2 as 'does D init matter in released code'."
+    },
+    {
+     "severity": "major",
+     "issue": "Prereg TFPS config (16 experts, lr 5e-4) is the H=96 config; etth1.sh uses 4/4 experts at H=192 and 4/4 experts lr 5e-3 at H=336.",
+     "fix": "Copy per-horizon config verbatim."
+    },
+    {
+     "severity": "major",
+     "issue": "Baselines crash in exp_main (3-way unpack, model.model_time.cluster).",
+     "fix": "Pre-specify baseline harness and smoke-test before freeze."
+    },
+    {
+     "severity": "major",
+     "issue": "'TFPS best arm' picked on test; SE undefined; no primary loader.",
+     "fix": "Fix primary arm in advance; Welch SE of difference; full-window primary."
+    },
+    {
+     "severity": "major",
+     "issue": "Mechanism verdicts not exhaustive; INERT = failure to reject.",
+     "fix": "Equivalence test with pre-set delta; MATTERS/HURTS/INCONCLUSIVE."
+    },
+    {
+     "severity": "minor",
+     "issue": "Test-time router noise makes test MSE stochastic.",
+     "fix": "Seed it; report a second noise draw."
+    }
+   ]
+  },
+  {
+   "lens": "fairness",
+   "model": "session",
+   "verdict": "LICENSED_WITH_FIXES",
+   "paper_access": "arXiv HTML v2 via WebFetch (summarised snippets); PDF not opened. Re-check quotes against PDF before freeze.",
+   "paper_quotes": [
+    "Alg.1 input: 'random Gaussian distribution-initialized subspace'",
+    "Sec 4.1: 'We conducted grid search to optimize ... learning rate' (lr grid {1e-4,5e-4,1e-3,5e-3,1e-2}, K_t,K_f in {1,2,4,8})",
+    "Sec 4.1: 'We rerun all the experiments with codes provided by their official implementation.'",
+    "App F.1: 'we conducted experiments using unified parameters'",
+    "Table 1 caption: input L=96",
+    "App A: 'best parameters are selected based on the lowest validation loss'",
+    "EDESC not cited in visible text"
+   ],
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "Per-horizon TFPS config misstated (see foregone).",
+     "fix": "Per-horizon table from etth1.sh + run_longExp defaults (patience 20, lradj type3, eta 5, alpha=gama=1)."
+    },
+    {
+     "severity": "blocking",
+     "issue": "D_zero routing random, not constant.",
+     "fix": "Rewrite premise; routing-entropy diagnostic; fix RNG before test."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Baselines cannot run in TFPS exp_main.",
+     "fix": "Run them in official PatchTST repo, whose models/PatchTST.py, DLinear.py, data_provider and utils/tools.py are byte-identical to TFPS's copies."
+    },
+    {
+     "severity": "major",
+     "issue": "The paper describes a random Gaussian init for D (Alg.1), not k-means+SVD; D_orth is neither.",
+     "fix": "Add primary arm D_gauss (normal_(0,1), seeded; std=1 is our reading); keep D_orth secondary."
+    },
+    {
+     "severity": "major",
+     "issue": "Initialization_D arm feasible only as exploratory (SVD given labels; needs >=d members per cluster; no pretraining).",
+     "fix": "Optional D_svd via forward hooks + KMeans, non-gating."
+    },
+    {
+     "severity": "major",
+     "issue": "'(advantage TFPS)' not shown: released lr chosen under unknown D; baselines get per-seed lr search, TFPS none.",
+     "fix": "Give TFPS the same per-seed val lr grid; report released and searched rows; verdict on searched."
+    },
+    {
+     "severity": "major",
+     "issue": "Baseline configs not tied to their authors' settings.",
+     "fix": "PatchTST official etth1 arch with seq_len 96; DLinear individual=False, lr grid incl 5e-3; patience 20 for all (state deviation); anchor to paper's Table 1 baseline numbers."
+    },
+    {
+     "severity": "minor",
+     "issue": "test drop_last=True inherited from official PatchTST code.",
+     "fix": "Say so."
+    },
+    {
+     "severity": "minor",
+     "issue": "Q1 wording could read as a claim about authors' runs.",
+     "fix": "Scope to our CPU/torch 2.4.1 setup."
+    },
+    {
+     "severity": "minor",
+     "issue": "Paper-vs-code mismatches (K=16 outside paper grid; eta 5 vs eta=d; alpha placement).",
+     "fix": "List them."
+    }
+   ]
+  },
+  {
+   "lens": "leakage_selection",
+   "model": "session",
+   "verdict": "LICENSED_WITH_FIXES",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "Keep-all test scoring crashes in test(): np.array on ragged preds (exp_main.py:361-365) with numpy 1.26.4.",
+     "fix": "In-process patch to concatenate; derive both scorings from one saved pass."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Baselines cannot run in Exp_Main; their val criterion undefined.",
+     "fix": "Pre-register adapted loop / harness."
+    },
+    {
+     "severity": "major",
+     "issue": "TFPS early-stops on MSE+aux (exp_main.py:130,262), baselines on MSE; under D_orth aux terms can move the selected checkpoint.",
+     "fix": "Primary = released selection; sensitivity = all arms select on pure val MSE."
+    },
+    {
+     "severity": "major",
+     "issue": "Eval-time router noise: re-running test differs; test-loader size changes RNG stream during training.",
+     "fix": "Train once, score both ways from one forward pass; optionally drop per-epoch test vali for all arms."
+    },
+    {
+     "severity": "major",
+     "issue": "Per-horizon config misstated.",
+     "fix": "Fix."
+    },
+    {
+     "severity": "major",
+     "issue": "Baseline budget unpinned; Q3 wording contradicts design.",
+     "fix": "Pin epochs 100, patience 20, type3, batch 128 and architectures."
+    },
+    {
+     "severity": "major",
+     "issue": "Checkpoint 'setting' string lacks seed/arm => runs can overwrite checkpoints.",
+     "fix": "Unique model_id/checkpoint dir per run; log checkpoint hash."
+    },
+    {
+     "severity": "minor",
+     "issue": "Val loader shuffle+drop_last (113 of 2545 val windows dropped at H=336).",
+     "fix": "Declare as released for all arms."
+    },
+    {
+     "severity": "minor",
+     "issue": "Test drop counts at audited horizons: H=192 1 of 2689, H=336 113 of 2545.",
+     "fix": "Report; expect negligible effect at H=192."
+    },
+    {
+     "severity": "minor",
+     "issue": "Clean: scaler on train only, RevIN per window, MSE in normalised space, early stopping/lr schedule use only val.",
+     "fix": "State."
+    }
+   ]
+  },
+  {
+   "lens": "statistics",
+   "model": "session",
+   "verdict": "LICENSED_WITH_FIXES",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "'TFPS best arm' chosen on test; min of baselines biased; SE undefined.",
+     "fix": "Primary TFPS arm fixed in advance; compare to each baseline (intersection-union)."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Thresholds undefined; VANISHES/SHRINKS fire on noise; no INCONCLUSIVE.",
+     "fix": "Welch 90% CI rules with claimed margins m_192=0.011, m_336=0.007: SURVIVES/SHRINKS/VANISHES(REVERSED)/INCONCLUSIVE, exhaustive, first match wins."
+    },
+    {
+     "severity": "blocking",
+     "issue": "MECHANISM-INERT is failure to reject; no MATTERS verdict.",
+     "fix": "TOST with delta=m_H; MATTERS / INIT-REVERSED / INERT / INCONCLUSIVE; premise check gates it."
+    },
+    {
+     "severity": "major",
+     "issue": "Power: n=5 adequate at H=192; at H=336 only if seed sd <~0.005.",
+     "fix": "Variance-only-triggered extension to n=10, once."
+    },
+    {
+     "severity": "major",
+     "issue": "No failed-run rule.",
+     "fix": "Non-finite = failed; reported; >=2 failures => BLOCKED for that arm."
+    },
+    {
+     "severity": "major",
+     "issue": "Per-horizon config misstated.",
+     "fix": "Fix."
+    },
+    {
+     "severity": "major",
+     "issue": "No primary scoring.",
+     "fix": "Primary = every window from saved per-window MSE; drop_last = first floor(N/128)*128 windows of same run."
+    },
+    {
+     "severity": "major",
+     "issue": "Baseline budget and lr-selection mechanics unspecified.",
+     "fix": "Pin; argmin best val loss, ties to smaller lr."
+    },
+    {
+     "severity": "major",
+     "issue": "A 100-epoch TFPS run (~47 min) exceeds a 45-min chunk; runs not resumable.",
+     "fix": "Per-epoch resumable checkpoints with self-test, or one-run-per-session exception."
+    },
+    {
+     "severity": "minor",
+     "issue": "No item-level combination rule.",
+     "fix": "MIXED if horizons disagree."
+    },
+    {
+     "severity": "minor",
+     "issue": "Anchor undefined.",
+     "fix": "Define; flag drift if paper value outside CI by >0.02."
+    },
+    {
+     "severity": "minor",
+     "issue": "At H=336 paper's best baselines (TSLANet, iTransformer) not rerun.",
+     "fix": "Add to Not claimed."
+    }
+   ],
+   "budget_estimate": "~9-11 CPU h expected (~12-15 run sessions); worst case 29-37 h."
+  },
+  {
+   "lens": "answer_built_in",
+   "model": "fable",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    {
+     "severity": "blocking",
+     "issue": "TFPS arm is the H=96 config at H=192/336; '(advantage TFPS)' false.",
+     "fix": "Per-horizon config verbatim."
+    },
+    {
+     "severity": "blocking",
+     "issue": "D=0 routing premise wrong (noisy router); noise may also swamp D_orth.",
+     "fix": "Routing diagnostics in every arm; 'routing uninformative' defined numerically; >=5 eval-noise seeds."
+    },
+    {
+     "severity": "blocking",
+     "issue": "Burden of proof on the paper: INERT from non-significance, VANISHES on point estimate, no INCONCLUSIVE.",
+     "fix": "Symmetric equivalence/CI rules; pilot SD and power line."
+    },
+    {
+     "severity": "major",
+     "issue": "No arm runs the mechanism as described.",
+     "fix": "Add D_kmeans/Initialization_D arm and the paper's 'PI->Linear' ablation (unused NoisyTopkRouter), incl. H=96; else rename verdict 'D-INIT-INSENSITIVE (zero vs random-orthogonal)'."
+    },
+    {
+     "severity": "major",
+     "issue": "lr asymmetry tilts toward VANISHES.",
+     "fix": "Matched lr search for TFPS; verdict on matched row."
+    },
+    {
+     "severity": "major",
+     "issue": "Baselines unspecified and crash; PatchTST is audit's choice not paper's best baseline.",
+     "fix": "Backbone-matched PatchTST + authors' config; split verdict vs paper-reported vs same-code retuned."
+    },
+    {
+     "severity": "major",
+     "issue": "Narrow scope with global-sounding labels; H=720 dropped without reason.",
+     "fix": "Add H=720 or state compute reason; add a pre-chosen largest-margin ETT cell; scope-suffix every verdict."
+    },
+    {
+     "severity": "major",
+     "issue": "Scored-twice variants confounded with training via RNG.",
+     "fix": "Train once, eval-only pass under both loaders."
+    },
+    {
+     "severity": "minor",
+     "issue": "D_zero may be closest to what authors ran (absmax 6e-41 in 2/3 processes); anchor only D_orth.",
+     "fix": "Anchor every arm; hypothesis wording only."
+    },
+    {
+     "severity": "minor",
+     "issue": "Q1/Q3 wording presupposes the negative.",
+     "fix": "Reword (fraction of N=10 fresh processes finite on this machine; neutral Q3)."
+    },
+    {
+     "severity": "minor",
+     "issue": "Best-arm and min-baseline are post-hoc selections.",
+     "fix": "Pre-name primary arm; Holm or IUT across baselines."
+    }
+   ]
+  }
+ ],
+ "decisions_needed": [
+  "Which D-init arm is primary for 'the mechanism as published': D_gauss (paper Alg.1 'random Gaussian'), D_svd (repo's unused Initialization_D), or D_orth; any new arm is Gustav's call.",
+  "Whether to add a router-noise-off / argmax routing arm and/or the paper's PI->Linear ablation (and H=96 for mechanism arms).",
+  "Whether TFPS gets the same per-seed lr search as baselines (all three lenses that raised it say yes).",
+  "Baseline harness: run PatchTST/DLinear in the official PatchTST repo (byte-identical model/data files) vs an in-process patch of TFPS's exp_main.",
+  "Scope: keep H=192/336 only or add H=720 / another ETT cell; budget ~9-11 CPU h expected for the current scope."
+ ]
+}

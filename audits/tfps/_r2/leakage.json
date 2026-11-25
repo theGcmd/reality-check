@@ -1,0 +1,77 @@
+{
+  "lens": "leakage_selection_budget (round 2)",
+  "prereg_reviewed": "audits/tfps/PREREG.md r2 draft",
+  "verdict": "LICENSED_WITH_FIXES",
+  "verified_clean": [
+    "Scaler fit on train rows only (data_loader.py:60-62, byte-identical in both repos, sha 1d49e220); RevIN is per-window (instance) normalisation, no cross-split statistics.",
+    "Early stopping and the type3 lr schedule read only the val loss: tfps exp_main.py:257,262,267-268; official exp_main.py:199,204,210. test_loss (tfps :258, official :200) is only printed.",
+    "Per-epoch test pass cannot change weights or BN: it runs inside vali() under model.eval() + torch.no_grad() (tfps :75-76,134; official :56-57,97); BatchNorm1d in the encoder (backbone_cluster_time.py:262,275) only updates running stats in train mode; total_loss/D_constraint (Cluster.py:72-88, Constraint.py) are pure functions; no buffers or counters are written in forward (SparseMoE.py, Cluster.py:54-70).",
+    "Per-epoch test pass does consume global RNG (TFPS router randn_like at eval, SparseMoE.py:59; one base-seed draw per DataLoader iterator in both repos), but the amount consumed depends only on tensor shapes/batch count, never on test values, so it shifts the training RNG stream without carrying test information. PREREG's 'affects nothing but logs and RNG' is correct.",
+    "No cross-window mixing in TFPS: the un-permuted reshape (backbone_cluster_time.py:76) keeps rows b*P..(b+1)*P-1 inside sample b, so per-window predictions do not depend on batch composition except through router-noise draws; deriving both scores from one eval pass is therefore valid.",
+    "type3 schedule identical in both repos (utils/tools.py:18-19, sha 80c2f839 both). Both repos construct OneCycleLR (tfps exp_main.py:160-164; official :120-124) which sets lr to max_lr/25 at construction (checked: torch 2.4.1, lr=5e-3 -> 2.0e-4) and is never stepped under type3, so epoch 1 trains at lr/25, epochs 2-3 at lr, epoch k>=3 at lr*0.9^(k-3). Symmetric across arms.",
+    "Arm 3 (noise-off) reuses the arm-1 checkpoint selected on val only; no test-based choice enters; paired comparison is legitimate.",
+    "Val loader shuffle+drop_last (data_factory.py:28-30) identical for all arms; test loader shuffle False, drop_last True (:17-20)."
+  ],
+  "issues": [
+    {
+      "severity": "major",
+      "issue": "Selection criterion differs systematically between the two Q2 arms (and vs baselines) because of magnitude, not just form. TFPS val loss = MSE + alpha*aux_time + gama*aux_freq (exp_main.py:130). Under D ~ N(0,1) (112x112, d=28) the constraint terms alone are ~1.20 (D_constraint1) + ~1.04 (D_constraint2) per EDESC instance, ~4.5 total for both instances, vs val MSE ~0.45; under D = 0 the aux is the constant 0.0106 per instance (KL = 0, constraint2 = 0). So arm 1 early-stops on a quantity dominated by D's progress towards orthonormality, arm 2 effectively on MSE, baselines on MSE (official exp_main.py:93). With delta=0 (tools.py:41,55) any tiny monotone aux decrease resets patience, so arm 1 may run far more epochs than arm 2 (an epoch-budget asymmetry inside Q2) and its checkpoint may not be its best-forecast epoch.",
+      "evidence": "tfps exp/exp_main.py:116-121,130,262; layers/Constraint.py:14-17,30-39; layers/Cluster.py:68-69; utils/tools.py:50-63; numeric check of the constraint terms at N(0,1) init (torch 2.4.1, seed 0): 1.196, 1.038; at D=0: 0.0106.",
+      "fix": "Keep released selection as primary, but (a) log per epoch the val MSE and each aux component separately and epochs-to-stop per run; report mean epochs-to-stop per arm; (b) pre-register that the pure-val-MSE re-selection is applied to every TFPS arm and the Q2/Q3 tables are recomputed on it, and if any label differs from the primary label attach the suffix 'SELECTION-SENSITIVE (pure-val-MSE label: ...)'. State in §2 that the D_gauss scale choice directly sets how much of the stopping criterion is aux (N(0,1/(n·d)) would make aux ~0 at init)."
+    },
+    {
+      "severity": "major",
+      "issue": "The pure-val-MSE sensitivity hook is placed on Exp_Main.vali, which the training loop calls for BOTH val and test every epoch (exp_main.py:257-258). A hook that does not distinguish the two calls would select the sensitivity checkpoint on test MSE (direct test selection), or alternate between them.",
+      "evidence": "tfps exp/exp_main.py:73,257,258 (same function, different loaders).",
+      "fix": "Hook must key on the loader object identity (vali_loader created at :139) or wrap only the first vali call per epoch; add a self-test asserting the hook fires exactly once per epoch, on a loader whose dataset.set_type == 1 (val), and that it never fires for the test loader."
+    },
+    {
+      "severity": "major",
+      "issue": "The sensitivity self-test 'recorded val MSE equals an independent recompute on that checkpoint' cannot pass as worded for TFPS: val MSE at that epoch was computed with the noisy eval router (SparseMoE.py:59) and a shuffled, drop_last val loader (data_factory.py:28-30), both drawn from the global RNG at that point in training. A recompute will differ unless that RNG state is restored.",
+      "evidence": "layers/SparseMoE.py:57-60 (no self.training guard); data_provider/data_factory.py:28-30.",
+      "fix": "Save torch/np/python RNG state immediately before each val pass; the self-test restores it and reproduces the val MSE to 1e-6; alternatively state the tolerance as a noise-band and test only bit-exact for the deterministic baselines."
+    },
+    {
+      "severity": "major",
+      "issue": "Baseline lr-selection value is not returned by the code. EarlyStopping stores it in val_loss_min (tools.py:47,69) but the object is a local of train() (official exp_main.py:112) and train() returns only the model (:215-217). The printed value (tools.py:67) has 6 decimals, which can create spurious ties between lr runs. PREREG says 'the value EarlyStopping saved' without saying how it is obtained.",
+      "evidence": "utils/tools.py:40-69 (both repos, sha 80c2f839); patchtst_official exp/exp_main.py:4,112,204,215.",
+      "fix": "Pre-register the mechanism: replace exp.exp_main.EarlyStopping (imported by name at official exp_main.py:4) with a subclass that writes val_loss_min (full float) and best epoch to metrics.json at every save; self-test that it equals min over the per-epoch printed val losses and that the saved checkpoint's epoch matches. Lr selection reads only this file, never any test field."
+    },
+    {
+      "severity": "major",
+      "issue": "Both run_longExp.py files default to itr = 2 (tfps run_longExp.py:91, official run_longExp.py:77) and loop over ii (tfps :132, official :118), training a second run with suffix _1 from the continued RNG stream. PREREG pins epochs/patience/lradj but not itr; an unpinned itr doubles every run's budget and creates a second candidate score per seed/lr that could be picked post hoc.",
+      "evidence": "tfps run_longExp.py:91,132-160; patchtst_official run_longExp.py:77,118-143; scripts/etth1.sh passes itr 1 for TFPS only.",
+      "fix": "Add '--itr 1' to the shared settings for every arm, and assert in the wrapper that exactly one setting directory/checkpoint exists per run."
+    },
+    {
+      "severity": "minor",
+      "issue": "D_gauss draw location is ambiguous: 'drawn from torch's global RNG right after torch.manual_seed(seed) inside EDESC construction'. Re-seeding inside EDESC would give both EDESC instances identical D and reset the stream for later modules; drawing from the global stream without re-seeding shifts every subsequent init and the whole training RNG stream relative to tfps_zero. Neither leaks test data, but the second makes arms 1 vs 2 differ in all other inits and data order too.",
+      "evidence": "layers/Cluster.py:30 (uninitialised Parameter); run_longExp.py:112-115 (global seeding before Exp construction).",
+      "fix": "Draw D from a dedicated torch.Generator seeded e.g. 30000+seed (+1 for the frequency instance), so the global stream, all other inits and the shuffle order are identical between tfps_gauss and tfps_zero at the same seed; optionally report a paired Δ as a descriptive check alongside the Welch rule."
+    },
+    {
+      "severity": "minor",
+      "issue": "EarlyStopping with a NaN val loss: score = NaN, the comparison at tools.py:55 is False, so it saves and resets the counter every epoch; the run goes the full 100 epochs and the 'best' checkpoint is the last epoch. The failure rule covers non-finite training loss and primary score but not a non-finite val loss with finite train loss (possible via F.kl_div(pred.log()) at eval).",
+      "evidence": "utils/tools.py:50-63; layers/Cluster.py:77.",
+      "fix": "Add 'any non-finite val loss' to the failed-run definition."
+    },
+    {
+      "severity": "minor",
+      "issue": "Variance-triggered extension: the rule is mechanical (half-width only), so it cannot be steered towards a direction, but it is a data-dependent second look taken after test scores are visible, and 'every arm' includes the 4-lr baseline search.",
+      "evidence": "PREREG §7 Reachability.",
+      "fix": "Before running the extension, commit (git) the n=5 per-run score files and the computed half-widths; report the n=5 table alongside the n=10 verdict; state that the extension reruns the full lr grid for baselines (4x per seed) and that lr is re-selected per new seed by the same rule."
+    },
+    {
+      "severity": "minor",
+      "issue": "Budget asymmetry by design: baselines get best-of-4 lr on val per seed (4 training runs), TFPS gets 1 run at an authors' lr whose selection procedure (val vs test) cannot be verified from the code; if the authors chose it on test, TFPS inherits that selection. Owner decision 6 accepts this.",
+      "evidence": "PREREG §5; scripts/etth1.sh:77-89,133-145.",
+      "fix": "State explicitly in §9 that the TFPS lr is an external choice of unknown provenance (possibly test-informed) and that Q3 cannot separate method gain from that choice."
+    },
+    {
+      "severity": "minor",
+      "issue": "Checkpoint path handling: train() uses args.checkpoints (exp_main.py:145) but test(test=1) hard-codes './checkpoints/'+setting (tfps exp_main.py:282, official :224). Sensitivity checkpoint must not overwrite checkpoint.pth (tools.py:68 writes that fixed name).",
+      "evidence": "tfps exp/exp_main.py:145,272,282; utils/tools.py:68.",
+      "fix": "Eval-only pass loads the checkpoint by absolute path recorded in provenance (with sha256), never via test(test=1); sensitivity checkpoint saved as checkpoint_valmse.pth in the same run directory."
+    }
+  ]
+}

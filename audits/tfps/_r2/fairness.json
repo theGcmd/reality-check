@@ -1,0 +1,73 @@
+{
+  "lens": "fairness",
+  "round": 2,
+  "prereg_reviewed": "audits/tfps/PREREG.md r2 draft",
+  "paper_access": "NOT AVAILABLE. One WebFetch of arxiv.org/abs/2410.09836 was attempted; the permission request timed out (PROVENANCE_REQUIRED). No workaround tried. Every [Q] item is unchecked by this lens.",
+  "verdict": "LICENSED_WITH_FIXES",
+  "checks_passed": [
+    "TFPS per-horizon config matches scripts/etth1.sh: H=192 :77 pred_len, :81 lr 0.0005, :83/:87 T/F experts 4/4, :85/:89 top_k 1/1; H=336 :133, :137 lr 0.005, :139/:143 4/4, :141/:145 1/1. Common :100-118 / :156-174: seq_len 96, features M, enc_in 7, e_layers 3, n_heads 4, d_model 16, d_ff 128, dropout 0.3, fc_dropout 0.3, head_dropout 0, patch_len 16, stride 8, beta 0.1, train_epochs 100; :120/:176 itr 1, batch 128; :93/:149 seed 2021.",
+    "run_longExp.py defaults as stated: patience 20 (:94), lradj type3 (:98), eta 5 (:84), alpha 1 (:86), gama 1 (:87), revin 1 (:46). type3 is utils/tools.py:18-19 (identical file in both repos).",
+    "PatchTST arch matches patchtst_official scripts/PatchTST/etth1.sh:30-42 (e_layers 3, n_heads 4, d_model 16, d_ff 128, dropout 0.3, fc_dropout 0.3, head_dropout 0, patch 16, stride 8, epochs 100, batch 128, lr 1e-4); seq_len 336 at :8. Official defaults: patience 100 (:80), individual 0 (:51), lradj type3 (:84).",
+    "DLinear matches scripts/Linear/etth1.sh:9,24,38,52: seq_len 336, batch 32, lr 0.005; individual 0 (default, :1 comment 'add --individual for DLinear-I'). Stated deviations (seq_len 96, batch 128, lr grid containing 1e-4 and 5e-3, patience 20) are correct.",
+    "sha256 table recomputed: all 9 'identical' files match (49d8bb86, 0893b53c, 21c06c70, e64c0ccd, 98f83b72, 1d49e220, 80c2f839, 9d61cbf6, 2ad031a4). PatchTST_backbone.py 7f0b0830 vs df671731; the diff is two commented prints and one blank/whitespace line, as stated. exp_main.py (9ba1303f vs de76924d) and run_longExp.py (9c1728eb vs 44345cb6) differ, as stated. exp/exp_basic.py (6c69bada), models/Linear.py, models/NLinear.py are also identical and can be added.",
+    "Test-window counts recomputed: N = 2881 - H, so 2689 at H=192 (drops 1) and 2545 at H=336 (drops 113).",
+    "D is uninitialised (Cluster.py:30); Initialization_D is imported (exp_main.py:24) and never called; grep finds no other write to D."
+  ],
+  "issues": [
+    {
+      "severity": "major",
+      "issue": "The N(0,1) scale for D_gauss goes against what the repo shows about the intended scale, and it changes what the released training and selection loop does. That can work against TFPS in Q3.",
+      "evidence": "Repo evidence on scale: (1) Cluster.py is the EDESC module almost line for line: the 'Subspace bases proxy' comment, the commented-out EDESC line `self.D = Parameter(torch.Tensor(n_z, n_clusters))` at :27, the commented-out AE reconstruction, and 'Eq 9/12/13/15/16' comments. That module never initialises D because its pipeline overwrote it with Initialization_D. (2) InitializeD.py:50-55 sets D from SVD left singular vectors, so columns are orthonormal and entries are about 1/sqrt(n*d) = 0.094. (3) D_constraint1 (Constraint.py:170-173) pulls diag(D^T D) to 1, i.e. unit column norm. None of this states a mean or std, but all three point to unit-norm columns, not N(0,1), whose column norms are about sqrt(112) = 10.6. This lens measured numerically (random z ~ N(0,1), n=4, d=28, no training): under N(0,1), D_constraint1 + D_constraint2 = 1.16 + 0.99 = 2.15 per EDESC, so about 4.3 across the two instances. Forecast MSE is about 0.45. Under N(0,1/112) the same terms are 0.0014 + 0.009. The early-stopping criterion is MSE + alpha*aux + gama*aux (exp_main.py:130,262), so under N(0,1) about 90% of the selection signal at the start is the constraint term. At H=192 (lr 5e-4, type3 decay, about 65 steps per epoch), the total Adam movement per entry is at most about 65*5e-4*13 = 0.42. D therefore cannot shrink to unit columns, and the aux term probably dominates val loss for the whole run. Trade-off: at N(0,1/112), s is nearly uniform (mean row range 0.023; noisy-top1 vs argmax agreement 0.26 against chance 0.25). At N(0,1) the range is 0.13 and agreement 0.29. Each scale handicaps a different part of the method.",
+      "fix": "Prefer this: pre-register both scales as TFPS arms, N(0,1) and N(0,1/(n*d)) (the EDESC/constraint-consistent scale). Fix the primary now; this lens recommends N(0,1/(n*d)) for Q3, because it does not inflate the released selection loss. A Q2 'INIT MATTERS/EQUIVALENT' label or a Q3 'TFPS loses' label may be stated without a scale qualifier only if it holds under both scales. Cost: about +5-10 CPU-h. Minimum if budget forbids: keep N(0,1), suffix every Q2/Q3 label with 'D ~ N(0,1)', promote the pure-val-MSE checkpoint to a co-reported Q3 table (still non-gating), and log the aux share of val loss at the selected epoch. Remove the claim that N(0,1) 'most literally' reads the paper, or support it from the PDF."
+    },
+    {
+      "severity": "major",
+      "issue": "The Q3 margin m_336 depends on the paper's Table 1 baseline values, which no one has verified. There is a real chance the paper's own DLinear value at H=336 is below TFPS's 0.484.",
+      "evidence": "The prereg says the best H=336 baseline is 0.491 (TSLANet, iTransformer), from a summarised fetch. The widely copied L=96 ETTh1 DLinear row (TimesNet/iTransformer tables) is, from this reviewer's memory and not verified, about 0.437 at 192 and 0.481 at 336. If TFPS's Table 1 reuses it, DLinear beats TFPS at 336 in the paper itself, and 'TFPS better than both B' at a margin of 0.007 is not a claim the paper makes. This lens could not fetch the paper.",
+      "fix": "Before FREEZE, copy the Table 1 TFPS, PatchTST and DLinear values at L=96 for H=192 and 336 from the PDF. Define a per-baseline claimed margin m_{H,B} = paper(B) - paper(TFPS). If m_{H,B} ≤ 0 for some B, pre-register that the paper claims no gain over B at H, and replace Q3 at that H with a non-gating descriptive comparison. If the PDF cannot be read, mark Q3 thresholds 'per summarised HTML' in every label."
+    },
+    {
+      "severity": "minor",
+      "issue": "Using the single smallest margin m_H against both baselines does not match 'a gain as large as claimed' when the claim over PatchTST is larger. The direction is lenient to TFPS, so it is not unfair, but it should be explicit.",
+      "evidence": "PREREG §7 Q3 uses one m_H for both B.",
+      "fix": "Use m_{H,B} per baseline (see above), or state that one minimum margin is used on purpose and is lenient."
+    },
+    {
+      "severity": "minor",
+      "issue": "The TFPS config list leaves out released defaults that differ from the baselines' defaults.",
+      "evidence": "tfps run_longExp.py:51 individual=1 (official :51 is 0, and TFPS's head uses it: models/PatchTST_MoE_cluster.py:79). Also affine 0 (:47), subtract_last 0 (:48), padding_patch 'end' (:45), decomposition 0 (:49), num_workers 10 (:90, the prereg uses 0), the hard-coded expert dropout 0.1 (SparseMoE.py:16), and the GPU/amp-off defaults.",
+      "fix": "Add these to §2 and §5 (individual 1 for TFPS, 0 for both baselines, each as its authors released it). List num_workers 0 and CPU as deviations for all arms."
+    },
+    {
+      "severity": "minor",
+      "issue": "The D_gauss RNG wording is ambiguous, and one reading makes the two D matrices identical.",
+      "evidence": "§5 arm 1: 'drawn from torch's global RNG right after torch.manual_seed(seed) inside EDESC construction (both instances)'. At 4/4 experts both D are 112x112. Reseeding in each constructor makes time-D equal to frequency-D and also resets the RNG for every layer built after it. Not reseeding means arms 1 and 2 get different initialisations for all later parameters (zero_ draws nothing).",
+      "fix": "Draw D from a dedicated torch.Generator seeded, for example, (seed*10 + instance_id), and leave the global RNG untouched. Arms 1 and 2 then share every non-D initial weight. Add a self-test that the two D differ and that the non-D state_dict matches between arms at construction."
+    },
+    {
+      "severity": "minor",
+      "issue": "Line citations for the missing permute in the time backbone are off.",
+      "evidence": "layers/PatchTST_MoE_backbone_cluster_time.py has the reshape at :77 and the permutes at :81 and :85. :83-87 are the frequency-file lines (:79, then :83 and :87).",
+      "fix": "Cite time :77 vs :81-85 and frequency :79 vs :83-87."
+    },
+    {
+      "severity": "minor",
+      "issue": "Calling the DLinear settings its 'own published' config is not quite accurate.",
+      "evidence": "patchtst_official scripts/Linear/etth1.sh passes only seq_len, batch and lr. Epochs 100, patience 100 and lradj type3 come from PatchTST's run_longExp.py defaults, not from DLinear's authors. This reviewer recalls, unverified, that LTSF-Linear's own defaults were 10 epochs and patience 3.",
+      "fix": "Say 'DLinear as configured in the PatchTST repo's scripts/Linear/etth1.sh', not 'its own authors' config'. This does not change the arms."
+    },
+    {
+      "severity": "minor",
+      "issue": "The Q1 NaN counts have no logged provenance in the audit directory, and the authors' environment differs.",
+      "evidence": "§2 cites 4586-4635 NaN of 12544 over 3 processes. feas_orth.log and feas_zero.log only show the orth and zero inits. The README asks for Python 3.6 and PyTorch 1.9.0, and the authors ran on GPU (--gpu 7). Contents of uninitialised memory depend on the allocator and environment.",
+      "fix": "Keep the step (c) N=10 log as the source and cite it. Keep the existing scope statement that Q1 says nothing about what the authors' D contained."
+    },
+    {
+      "severity": "minor",
+      "issue": "The phrase 'routing may be close to random whatever D is' could lead readers to assume an answer before arm 4 runs.",
+      "evidence": "§2 router bullet. This lens's random-z numbers give agreement 0.29 at N(0,1) against chance 0.25, so the effect depends on scale.",
+      "fix": "Change to 'the noise is large relative to the range of s; arm 4 measures how far routing follows the affinity.'"
+    }
+  ],
+  "memory_note": "No user memory was consulted."
+}

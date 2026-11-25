@@ -22,8 +22,7 @@
   distribution-initialized"; EDESC / k-means+SVD not described.
 
 ## Next
-- BLOCKED on Gustav's decisions (see DIGEST 2026-11-24 DECISION NEEDED). Then step (b): rewrite PREREG.md per review
-  and decisions, re-review (round 2 of max 3).
+- (superseded, see 2026-11-25 entry below)
 
 ## Patches in force (wrapper `run_tfps_dinit.py`, not yet used for scoring)
 - `layers.Cluster.EDESC.__init__` (layers/Cluster.py:30 allocation) — D init asis/zero/orth.
@@ -32,3 +31,26 @@
 
 ## 2026-11-24 20:00 London — owner decisions recorded
 - PREREG.md now has OWNER DECISIONS 1-8. Row BLOCKED until 03:00 London 2026-11-25 (owner timing); then step (b).
+
+## 2026-11-25 ~03:10-03:40 UTC — step (b): prereg r2 + design review round 2 → NOT_LICENSED (not foregone)
+- PREREG.md rewritten (r2, commit 32c41b2): arms tfps_gauss (primary, N(0,1)), tfps_zero (affinity-blind control),
+  tfps_gauss_nonoise (eval-only, same checkpoint), routing measurement A/H_r, patchtst + dlinear in official PatchTST
+  repo with per-seed val lr grid; Welch/paired 90% CI rules with INCONCLUSIVE; byte-identity table; engineering list.
+- Review r2 (`_design_review_r2.json`, raw lenses in `_r2/`): foregone / fairness / leakage / statistics
+  LICENSED_WITH_FIXES; Fable answer-built-in LICENSED_WITH_FIXES with 1 blocking issue → round not licensed.
+  Foregone lens: every verdict reachable; forward-only probe A ≈ 0.283 under N(0,1) (chance 0.25), s near-uniform.
+- Shared major finding (4 lenses, re-checked): under N(0,1) the D constraints add ~4.4 to TFPS's early-stopping val
+  loss (val MSE ~0.45), vs ~0.01 under D=0 or N(0,1/(n·d)) → arm-1 checkpoint selected mostly on D constraint decay.
+- Fixes to apply in r3 regardless of decision: dedicated torch.Generator for D; pin --itr 1; EarlyStopping subclass
+  writing full-precision val_loss_min; NaN val loss = failed; sensitivity hook keyed on val loader with RNG restore;
+  load checkpoints by absolute path; correct power text (SHRINKS needs half-width < m_H/2; SURVIVES/VANISHES none;
+  Welch df can be ~4-6); exact extension formula committed by script before labels; Bonferroni (97.5% one-sided)
+  over the two baselines or state the 8.2% rate; failed-run suffix + sensitivity; BLOCKED/PREMISE first in order;
+  Q2 item-level rule; A qualifier per router, arm 1 only, with stated ceiling (~0.61); anchor via prediction
+  interval; state type3 runs epoch 1 at lr/25 (both repos); list individual/num_workers deviations; label scope
+  "released code with audit-supplied D init"; permute cite :81-85; per-baseline margins m_{H,B} from PDF Table 1.
+- Paper still unread (arXiv fetch permission prompt timed out, 2 agents). [Q] items unverified.
+
+## Next
+- BLOCKED on Gustav: D scale decision + paper access (DIGEST 2026-11-25). Then step (b) round 3 of max 3: r3 rewrite +
+  review. If r3 is not licensed, item goes BLOCKED with reasons per protocol.

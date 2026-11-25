@@ -1,0 +1,81 @@
+{
+ "lens": "statistics",
+ "round": "r2",
+ "prereg_reviewed": "audits/tfps/PREREG.md r2 draft (not frozen)",
+ "verdict": "LICENSED_WITH_FIXES",
+ "summary": "The Q2 and Q3 rules are exhaustive (each ends in INCONCLUSIVE), first-match-wins gives a consistent order, and every label can be reached in both directions when seed sd is <= ~0.005. Three things need fixing before FREEZE: (1) the reachability paragraph is wrong for SHRINKS and for unequal variances; (2) the extension trigger is not an exact formula; (3) the 'for some B' negative rules are a union over two baselines, so if the paper's claim is exactly true they fire about 8% of the time rather than 5%. Nothing here is blocking.",
+ "issues": [
+  {
+   "severity": "major",
+   "issue": "The reachability/power paragraph (§7) says SURVIVES, SHRINKS and VANISHES all need half-width < m_H. That is wrong both ways. SHRINKS (L>0 and U<m) needs 2*hw < m, i.e. hw < m/2, and so does the 'INIT MATTERS, smaller than m_H' sub-label. SURVIVES and VANISHES have no half-width requirement: with a wide CI they can still fire from the point estimate (VANISHES then needs d_hat < 0). Only INIT EQUIVALENT strictly needs hw < m. The paragraph also assumes df ~ 8 (equal sd). If DLinear's seed sd is much smaller than TFPS's (likely, since DLinear is deterministic and TFPS has eval noise), Welch df falls to ~4-6 and t to 1.95-2.12.",
+   "evidence": "Arithmetic: n=5, equal sd: df 8.00, t 1.860, hw 1.176*sigma (the prereg is correct here). sd ratio 0.1: df 4.08, t 2.120, hw 0.953*sigma_T. n=10 equal: df 18, t 1.734, hw 0.775*sigma. n=5 vs n=4 (one failed run): df 6.6, hw 1.284*sigma. Reaching SHRINKS needs sigma < 0.0047 (H=192) / 0.0030 (H=336) at n=5 and < 0.0071 / 0.0045 at n=10. Monte Carlo with a true gain of m/2: P(SHRINKS) = 0.97 at sd 0.002, 0.10 at sd 0.005, 0.002 at sd 0.01 (H=192).",
+   "fix": "Rewrite the paragraph per label: EQUIVALENT needs hw<m_H; SHRINKS and the 'smaller than m_H' sub-label need hw<m_H/2; SURVIVES/VANISHES/REVERSED have no hw floor. Quote Welch-Satterthwaite df for an sd ratio of 1 and of 0.1, and the sigma thresholds at n=5 and n=10. State that SHRINKS is effectively reachable only if seed sd <= ~0.003-0.005."
+  },
+  {
+   "severity": "major",
+   "issue": "The extension trigger is not specified exactly. 'Any Q2/Q3 rule is unreachable because the half-width exceeds m_H' does not match its own criterion, because SHRINKS is already unreachable once hw > m_H/2. It also leaves open which CIs count (Δ, d_patchtst, d_dlinear, the paired Q2b?), which n to use after a failure, and who computes it.",
+   "evidence": "Simulation with trigger = max hw over {Δ, d_patchtst, d_dlinear} > m_H at n=5. P(extend) at H=192: 0.00 for sd 0.005, 0.57-0.83 for sd 0.01, ~1.0 for sd 0.02. At H=336: 0.22-0.41 for sd 0.005, 0.95-1.0 for sd 0.01. Type-I error of a single 5% one-sided bound under the null: fixed n=5 gives 0.046-0.047 (Welch is conservative); with the extension it is 0.050-0.057, highest when P(extend) is about 0.5. The inflation is small and stays near nominal.",
+   "fix": "Write it as a formula: extend at horizon H iff max(hw_Δ, hw_patchtst, hw_dlinear) > m_H, computed from the n=5 per-seed scores (n=4 for an arm with one failed run). Q2b is excluded. A script computes and commits the trigger from per-seed scores before any verdict table or label is printed. Say plainly that SHRINKS can stay unreachable after extension, and record the extension's ~0.5-1 pp type-I inflation (or accept it explicitly)."
+  },
+  {
+   "severity": "major",
+   "issue": "Burden of proof leans against the paper in Q3's negative rules. REVERSED ('U_B<0 for some B'), VANISHES ('for some B, L<=0 and U<m') and the SHRINKS/SURVIVES split ('U_B<m for at least one B') are unions over two baselines at 5% each. Intersection-union protects the positive 'TFPS better' conclusions but not these. If the paper's claim is exactly true (d_B = m_H for both B), the chance that the claimed margin is wrongly excluded is about 8%, not 5%.",
+   "evidence": "Monte Carlo with true d=m for both baselines and the TFPS arm shared: P(U_1<m) = 0.047 for one baseline vs P(any U_B<m) = 0.082 (sd 0.005 or 0.01, n=5). With true d=0: P(REVERSED) = 0.07-0.09 vs 0.05 nominal.",
+   "fix": "Use Bonferroni over the two baselines for the union conditions: U_B (in REVERSED, VANISHES and the SHRINKS/SURVIVES split) comes from a one-sided 97.5% bound, and L_B > 0 keeps 95% (intersection-union needs no correction). Alternatively, keep 90% CIs and state in §7 that the family-wise rate of the 'some B' labels is ~8-10%."
+  },
+  {
+   "severity": "major",
+   "issue": "The failed-run rule drops failures, which can favour the arm that fails. If a failure is arm-specific (e.g. D_gauss N(0,1) blowing up the aux loss, or TFPS at lr 5e-3), dropping that seed and using n=4 removes the worst outcome. The rule is also only written for n=5 ('>=2 failed seeds'), not for n=10. For baselines it does not say what happens when one lr-grid run is non-finite.",
+   "evidence": "§6: 'Failed runs are reported, not replaced... with 1 failure, verdicts use n = 4.' There is no rule for n=10 and no rule for failures within the lr grid.",
+   "fix": "(a) Any label that rests on an arm with a failure gets the suffix '— k FAILED RUN(S) IN <arm>'. Report a sensitivity where the failed seed is scored as that arm's worst observed seed. (b) BLOCKED if >=2 of 5 fail, or >=3 of 10 after extension. (c) A baseline lr run with non-finite val loss cannot be selected; the baseline seed counts as failed only if all 4 lr runs are non-finite. (d) Q3 is BLOCKED if tfps_gauss or either baseline is BLOCKED at that horizon. Q2 is BLOCKED if arm 1 or arm 2 is."
+  },
+  {
+   "severity": "minor",
+   "issue": "The VANISHES label claims more than its rule shows. The rule shows 'no gain detected and gain < m_H', not 'gain ≈ 0'. With a true gain of m/2 the label fires 35-52% of the time. SURVIVES is the mirror case: it needs only L>0 and m not excluded, so with a true gain of m/2 it fires 16-32%.",
+   "evidence": "Monte Carlo, d=m/2: H=192 sd 0.005 VANISHES 0.52 / SURVIVES 0.20; sd 0.01 VANISHES 0.45 / SURVIVES 0.16. H=336 sd 0.005 VANISHES 0.47 / SURVIVES 0.18.",
+   "fix": "Define each label in words in §7 (VANISHES = 'gain not detected; claimed margin excluded'; SURVIVES = 'gain detected; claimed margin not excluded'). Print the point estimate and CI next to every label. Optionally rename VANISHES to 'NOT REPLICATED (< m_H)'."
+  },
+  {
+   "severity": "minor",
+   "issue": "The A < 0.30 qualifier is ambiguous: 'mean A over seeds' does not say which arm, and it requires both routers to fall below 0.30. Requiring both lets one router follow its affinity while the other does not, with no suffix (lenient to the paper). In arm 2, s is exactly uniform, so argmax s is a tie. torch then returns index 0 and A becomes P(top-1 = 0).",
+   "evidence": "Simulated A under the released noise (s + randn*softplus(s), 4 experts): uniform 0.250; s=(.28,.24,.24,.24) 0.267; (.3,.233,.233,.234) 0.277; (.4,.2,.2,.2) 0.332; (.55,.15,.15,.15) 0.415; (.7,.1,.1,.1) 0.491; one-hot 0.616. The threshold 0.30 = 1/n + 0.05 is right and can go either way, but A only clears it if the largest s exceeds the rest by about 0.1 or more.",
+   "fix": "The qualifier uses arm 1 (tfps_gauss) only, and arm 2 is a reported reference. Apply the suffix per router (TIME / FREQ) when that router's mean A < 0.30, naming which. Document how ties are handled in arm 2. Report A's distribution across seeds as well as its mean."
+  },
+  {
+   "severity": "minor",
+   "issue": "Q2 has a small asymmetry. INIT MATTERS gets a 'smaller than m_H' sub-label but INIT REVERSED gets none when its CI lies inside (0, m_H). There is also no item-level rule for Q2 or for horizons that are BLOCKED or PREMISE FAILED. The BLOCKED and premise checks should be stated as rule 0, ahead of the first-match list.",
+   "evidence": "§7 Q2 rules 1-4 and the parenthetical; the item-level rule is defined only for Q3.",
+   "fix": "Add 'INIT REVERSED, smaller than m_H'. Make BLOCKED / PREMISE FAILED rule 0. Apply the same-label-or-MIXED rule to Q2 and Q2b. A BLOCKED horizon appears as 'MIXED (192: …, 336: BLOCKED)'."
+  },
+  {
+   "severity": "minor",
+   "issue": "Using the paper's best-baseline margin m_H for both PatchTST and DLinear is a choice that should be stated. Against a baseline the paper beats by more than m_H, this makes SURVIVES easier and VANISHES/SHRINKS harder: lenient to the paper and conservative for the audit, which is acceptable. SHRINKS against that baseline would then not mean 'smaller than claimed against B'.",
+   "evidence": "§1 defines m_H from the best baseline (DLinear at 192; TSLANet/iTransformer at 336), while Q3 compares with PatchTST and DLinear.",
+   "fix": "Keep m_H as the one gate and state why. Also report each baseline's own paper margin (TFPS minus B in Table 1 [Q]) next to its CI, not gating."
+  },
+  {
+   "severity": "minor",
+   "issue": "The per-seed score is correct, with two things to state. Every window has pred_len×7 elements, so the mean of per-window MSEs equals utils/metrics.MSE over the concatenated array. Windows overlap (stride 1) and are strongly autocorrelated, so window-level tests are invalid. All inference is across training seeds and conditional on the fixed test set.",
+   "evidence": "§6 per_window_mse definition; the test windows are shared by all arms.",
+   "fix": "Accumulate in float64. State that the CIs cover seed variance only, conditional on the ETTh1 test split, and that no window-level test is run. Optional and pre-registered: averaging the two eval-noise draws would lower TFPS seed sd. It must be chosen now, not after seeing the results."
+  },
+  {
+   "severity": "minor",
+   "issue": "Q2b's paired test is sound: the same checkpoint makes it a true pairing, df=4, t=2.132, hw=0.953*sd_diff. The anchor rule compares a single paper run with the CI of an n-seed mean, which a single run does not fall inside at the nominal rate.",
+   "evidence": "Paired arithmetic above; §7 Anchor.",
+   "fix": "Keep Q2b as written, outside the extension trigger. For the anchor (non-gating), use a 90% prediction interval for a single run (mean ± t·s·sqrt(1+1/n)) plus 0.02, or state that the CI version will flag drift more often."
+  }
+ ],
+ "simulations": {
+  "method": "Normal per-seed scores, 20k-200k replicates. TFPS sd sT in {0.002, 0.005, 0.01, 0.02}, baseline sd = sT or 0.002. Two baselines share the TFPS arm. Extension trigger = max hw over 3 CIs > m_H at n=5, then the rules are applied once at n=10.",
+  "Q3_true_d_eq_m_H192": "sd .002 SURVIVES .92/SHRINKS .08; sd .005 SURVIVES .84/INCONC .09/VANISHES .04; sd .01 SURVIVES .60/INCONC .31/VANISHES .09; sd .02 SURVIVES .18/INCONC .74",
+  "Q3_true_d_eq_m_H336": "sd .002 SURVIVES .92; sd .005 SURVIVES .66/INCONC .25/VANISHES .08; sd .01 SURVIVES .28/INCONC .63; sd .02 SURVIVES .08/INCONC .84",
+  "Q3_true_d_0_H192": "sd .002 VANISHES .91/REVERSED .08; sd .01 VANISHES .77/INCONC .12/REVERSED .09; sd .02 INCONC .53/VANISHES .38",
+  "Q3_true_d_half_m_H192": "sd .002 SHRINKS .97; sd .005 VANISHES .52/SURVIVES .20/INCONC .19/SHRINKS .10; sd .01 VANISHES .45/INCONC .38/SURVIVES .16",
+  "Q2_null_EQUIV_rate": "H192: sd .002 .91, .005 .81, .01 .36-.46, .02 .00; H336: .002 .91, .005 .46-.56, .01 .04, .02 .00; MATTERS/REVERSED .045-.057 each",
+  "extension_prob": "H192: sd .005 0.00, .01 0.57-0.83, .02 ~1; H336: sd .005 0.22-0.41, .01 0.95-1.0",
+  "type_I_one_sided": "fixed n5 0.046-0.047; with extension 0.050-0.057",
+  "union_inflation": "true d=m: P(U<m) one baseline 0.047, any of two 0.082",
+  "router_A": "uniform .250, (.4,.2,.2,.2) .332, (.7,.1,.1,.1) .491, one-hot .616"
+ }
+}

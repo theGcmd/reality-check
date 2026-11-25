@@ -1,0 +1,116 @@
+{
+ "lens": "answer_built_in",
+ "model": "fable",
+ "round": 2,
+ "prereg_reviewed": "audits/tfps/PREREG.md r2 draft (not frozen)",
+ "verdict": "LICENSED_WITH_FIXES",
+ "method_note": "Code read only at work/repos/tfps (layers/Cluster.py, layers/Constraint.py, layers/SparseMoE.py, layers/InitializeD.py, layers/PatchTST_MoE_backbone_cluster_time.py, exp/exp_main.py, utils/tools.py, scripts/etth1.sh, run_longExp.py). Nothing was run. All numbers below marked 'derived' are hand calculations from the code, not measurements; the ones that depend on the size of z (the 112-dim row fed to EDESC) are rough and should be measured in the step (c) smoke test.",
+ "r1_issues_status": [
+  {
+   "issue": "TFPS arm used the H=96 config (16 experts, lr 5e-4) at H=192/336",
+   "fixed": "yes",
+   "note": "PREREG section 2 and owner decision 5 now match scripts/etth1.sh: H=192 block is 4/1/4/1 with lr 0.0005, H=336 block is 4/1/4/1 with lr 0.005; patience 20, lradj type3, eta 5, alpha=gama=1 match run_longExp.py:84-98. The '(advantage TFPS)' wording is gone from section 5 (it survives only inside the verbatim owner decision 6)."
+  },
+  {
+   "issue": "D=0 routing premise wrong (noisy router, also at eval); noise may swamp any D",
+   "fixed": "yes",
+   "note": "Premise is now 'D stays 0 and s is constant', arm 2 is described as uniformly random routing, arm 4 measures agreement with argmax s and usage entropy, eval noise is seeded. I asked for >=5 eval-noise draws; r2 has 2 (one gating, one reported). Acceptable, but see the minor issue on reporting the eval-noise spread."
+  },
+  {
+   "issue": "Burden of proof on the paper: INERT from non-significance, VANISHES on a point estimate, no INCONCLUSIVE",
+   "fixed": "yes",
+   "note": "Q2 and Q3 rules are CI-based, exhaustive, have INCONCLUSIVE, and both directions are reachable. Using the smallest claimed margin m_H as the bar against PatchTST and DLinear is lenient to the paper (VANISHES is harder, SURVIVES easier). Power line and a width-only extension rule are present. What remains is not in the rules but in what the TFPS arm is: see blocking issue 1."
+  },
+  {
+   "issue": "No arm runs the mechanism as described",
+   "fixed": "partly",
+   "note": "D_gauss (paper Alg. 1 wording) is now primary. The SVD initialiser and the PI->Linear ablation were declined by the owner and are listed under 'not tested'. The scale of the Gaussian is the audit's choice and is where the answer can now be built in (blocking issue 1). No arm trains with affinity-following routing, so nothing here tests whether pattern routing helps (major issue 3)."
+  },
+  {
+   "issue": "lr asymmetry: baselines get a per-seed validation search over 4 lrs, TFPS gets none",
+   "fixed": "partly",
+   "note": "Owner declined a TFPS search on cost. r2 discloses it and no longer calls the released lr an advantage. The tilt toward VANISHES is still there; a free mitigation exists (major issue 4)."
+  },
+  {
+   "issue": "Baselines unspecified and crashing; PatchTST is the audit's choice, not the paper's best baseline",
+   "fixed": "yes",
+   "note": "Official PatchTST repo, pinned architectures, byte-identity table, deviations from published configs listed, the missing best baselines at H=336 listed under 'not claimed', baseline anchors to the paper's Table 1 planned."
+  },
+  {
+   "issue": "Narrow scope with global-sounding labels; H=720 dropped without a reason",
+   "fixed": "partly",
+   "note": "Every label gets the suffix 'ETTh1, L=96, H=..., released code, CPU'. The suffix omits the two facts that most limit the claim: the D init is supplied by the audit (the released code gives NaN D here), and the comparison is against PatchTST and DLinear only. No reason is given for dropping H=720 (owner decision 6 lists it under 'not now' without one). See major issue 2."
+  },
+  {
+   "issue": "Scored-twice variants confounded with training through the RNG",
+   "fixed": "yes",
+   "note": "One training run, one eval-only pass, both scores derived from the same per-window array."
+  },
+  {
+   "issue": "Anchor only on one arm; D_zero may be closest to what the authors ran",
+   "fixed": "partly",
+   "note": "Every TFPS arm is anchored to the paper value. But Q3 is judged on tfps_gauss alone; if tfps_zero is the arm that reproduces the paper, the Q3 label would be about an arm the authors may not have run. Folded into blocking issue 1."
+  },
+  {
+   "issue": "Q1/Q3 wording presupposed the negative",
+   "fixed": "yes",
+   "note": "Q1 is descriptive and scoped to this machine; Q3 is neutral. Q2's second sentence ('Is the router exercising the affinity at all?') leans slightly; harmless because arm 4 answers it with a number."
+  },
+  {
+   "issue": "Best-arm and min-baseline were post-hoc selections",
+   "fixed": "yes",
+   "note": "Primary arm fixed in advance; intersection-union across the two baselines."
+  }
+ ],
+ "issues": [
+  {
+   "severity": "blocking",
+   "issue": "D ~ N(0,1) is one reading of 'random Gaussian', but it is 112x off the scale the method's own constraint asks for, and that mismatch changes checkpoint selection for the gauss arm only. As written, both the Q2 contrast (gauss vs zero) and the Q3 TFPS arm depend on this audit-chosen scale through a side channel that has nothing to do with routing, and the only protection (pure-val-MSE re-selection) is non-gating.",
+   "evidence": "Derived from code. (a) layers/Constraint.py: loss_d1 = 1e-3*||diag(D^T D) - I||_F targets unit-norm columns; loss_d2 = 1e-3*||offblock(D^T D)||_F. For a 112x112 D ~ N(0,1): diag(D^T D) ~ 112, so loss_d1 ~ 1e-3*sqrt(112)*111 ~ 1.18; off-block entries have variance 112 over 9408 entries, so loss_d2 ~ 1e-3*sqrt(9408*112) ~ 1.03. Two EDESC instances with alpha=gama=1 add ~4.4 to the training loss and to the validation loss (exp/exp_main.py:130, :257-262), about 10x the forecast MSE (~0.4). For D=0 the same terms are 2*1e-3*sqrt(112) ~ 0.021 and constant; for D ~ N(0, 1/112) they are ~0.02. (b) EarlyStopping (utils/tools.py:40-63) saves on any decrease of that sum. Under N(0,1) the constraint term falls every epoch while Adam shrinks D (roughly lr per entry per step; my estimate at H=192 is ~0.1 per epoch at first, decaying with the type3 0.9^epoch schedule), which is larger than epoch-to-epoch changes in val MSE for many epochs. So tfps_gauss is likely to save late checkpoints chosen by the constraint term, while tfps_zero selects on val MSE plus a constant. (c) At H=192 (lr 5e-4, type3) Adam can move an entry of D by at most about 5e-4 * 65 steps * ~13 effective epochs ~ 0.4 in total, against an init sd of 1: D stays close to its random draw and cannot reach the constrained set. At sd 1/sqrt(112) ~ 0.094 it can. (d) Cluster.py:68: eta*d = 140 is added to ||z D_i||^2. With N(0,1), ||z D_i||^2 ~ ||z||^2 * chi2_28 (mean 28||z||^2), which swamps 140 for any ||z||^2 above ~5, so s varies across experts by roughly +-27% of 1/4. With unit-norm columns ||z D_i||^2 ~ 0.25||z||^2, so 140 dominates unless ||z||^2 is in the hundreds, and s is almost uniform. So N(0,1) is the scale under which the affinity has the most say in routing (in the paper's favour for Q2) and also the scale that distorts the loss and checkpoint selection (against it for Q2 and Q3). (e) layers/InitializeD.py, the initialiser the repo ships and never calls, returns orthonormal columns (left singular vectors), i.e. the unit-norm scale, not sd 1. An author's advocate would say sd 1 is a strawman on (a), (c) and (e); the audit can answer that sd 1 is the literal default and helps routing on (d). Neither side can be settled from the text.",
+   "fix": "Do not let one scale carry the verdicts. Pick one of these before FREEZE: (1) preferred: add arm tfps_gauss_unit, D ~ N(0, 1/(n*d)) (10 more TFPS runs, roughly +2.5 to 5 CPU-h; a new arm is the owner's call). State Q2 separately for each scale against zero. For Q3 compute the label against each TFPS arm (gauss sd 1, gauss unit, zero); a negative label (VANISHES / REVERSED / SHRINKS) stands only if every TFPS arm gets a label at least that negative, otherwise report 'Q3 DEPENDS ON D INIT' with the per-arm table. (2) If no arm is added: make the pure-val-MSE checkpoint the primary selection for all TFPS arms in Q2 (so the contrast is not checkpoint timing), require Q3 negative labels to hold under both selection rules and against both tfps_gauss and tfps_zero, and put 'D ~ N(0,1), audit's choice' in every label. In both cases log per epoch, for every TFPS run: val MSE, the two cluster losses, the saved-checkpoint epoch, and ||D||_F, so a reader can see what drove selection. If the PDF states a scale, it replaces all of this."
+  },
+  {
+   "severity": "major",
+   "issue": "Label suffix says 'released code', but no TFPS arm is the released code: the released code leaves D uninitialised (NaN in about 37% of entries in all 3 fresh processes here, per section 2), and every arm replaces D. The suffix also omits which baselines were used. A reader of 'VANISHES — ETTh1, L=96, H=336, released code, CPU' would take it as a statement about the authors' code against the field.",
+   "evidence": "PREREG section 7 heading (suffix text); section 2 first bullet; section 9 lists the missing baselines but the label does not carry them.",
+   "fix": "Suffix: '— ETTh1, L=96, H=…, released code with audit-supplied D init (<arm>), vs PatchTST and DLinear rerun at L=96, CPU'. Rename Q2 labels so the contrast is in the name: 'GAUSS(sd=…) BETTER THAN ZERO / ZERO BETTER / EQUIVALENT / INCONCLUSIVE' instead of 'INIT MATTERS'. Add one line to section 9 giving the reason H=720 is out."
+  },
+  {
+   "severity": "major",
+   "issue": "The routing qualifier and the noise-off arm are close to decided by the code, and neither tests the paper's mechanism. They are fair as descriptions of the released router, but the labels can be read as 'pattern routing does not work'.",
+   "evidence": "Derived. s is row-normalised (Cluster.py:69), so every s_i is in [0,1] and the row sums to 1; the router adds randn*softplus(s) (SparseMoE.py:59), whose sd is at least softplus(0) = 0.69 and is 0.83 at s = 0.25. Whatever D is, the noise is several times the spread of s, so A will sit near 1/n = 0.25 and the 0.30 threshold will very likely fire. Even a one-hot s would give A well below 1 (my rough estimate is around 0.5). For arm 3: experts were trained under near-random assignment and top-1 gate weight is exactly 1, so the experts are close to interchangeable and switching the noise off at eval only should change little. Training with noise off is the arm that would test affinity routing, and it is not in the design (owner decision 2 specifies eval only).",
+   "fix": "Keep both, but (1) state in section 7 that the qualifier is expected from the code and give the ceiling: A for a one-hot s under this router, computed once in step (c) by simulation of the router alone, plus the mean per-row max-min of s for each arm, so A is read against what is attainable; (2) reword the qualifier to 'ROUTER NOISE EXCEEDS AFFINITY SPREAD (A = …, ceiling = …)'; (3) add to section 9: 'whether training with noise-free affinity routing improves accuracy is not tested; NOISE-OFF labels concern evaluation of a model trained with the released noisy router'."
+  },
+  {
+   "severity": "major",
+   "issue": "Tuning asymmetry still tilts Q3 toward the negative: each baseline gets the best of 4 lrs per seed on validation, TFPS gets one lr tuned by the authors under an unknown D.",
+   "evidence": "PREREG section 5 'TFPS lr' and 'Baseline lr' bullets; owner decision 6.",
+   "fix": "No new runs needed. The grid already contains each baseline's published lr (PatchTST 1e-4, DLinear 5e-3). Report Q3 a second time with baselines fixed at those lrs (one lr each, like TFPS). Pre-register that a negative Q3 label is stated without qualification only if it holds in both tables; if it holds only with the searched baselines, the label gets 'only with per-seed lr search for baselines'. Add 'baselines lr-searched per seed, TFPS not' to the Q3 suffix."
+  },
+  {
+   "severity": "major",
+   "issue": "How D is drawn is ambiguous and may either make the two D matrices identical or break the pairing between arms.",
+   "evidence": "PREREG section 5 arm 1: 'drawn from torch's global RNG right after torch.manual_seed(seed) inside EDESC construction (both instances)'. If manual_seed(seed) is called inside each EDESC.__init__, the time and frequency D (both 112x112) are the same matrix, and the global stream is reset mid-construction, so layers built after each EDESC (SparseMoE experts, heads; PatchTST_MoE_backbone_cluster_time.py:47-65) repeat or shift their draws. If it is not re-seeded, the gauss arm consumes 2*12544 extra draws, so for a given seed every later weight differs from the zero arm and the gauss-zero contrast includes an unrelated re-draw of the experts and heads.",
+   "fix": "Draw D from a dedicated torch.Generator (e.g. seed 30000+seed for time, 40000+seed for frequency) and leave the global stream untouched. Then gauss and zero share every other initial weight for a given seed; self-test that all non-D parameters are bitwise equal across the two arms at step 0. Report the paired difference across seeds next to the Welch CI (Welch stays the gating rule unless the statistics lens prefers paired)."
+  },
+  {
+   "severity": "minor",
+   "issue": "TFPS test MSE depends on the eval-noise draw; verdicts use one draw.",
+   "evidence": "PREREG section 6: second draw reported, not used.",
+   "fix": "Report |draw1 - draw2| per run next to the seed sd. If its mean exceeds a quarter of m_H, say so beside every TFPS-based label. Averaging the two draws for the gating score would be cleaner; decide before FREEZE."
+  },
+  {
+   "severity": "minor",
+   "issue": "Q2 premise check covers only the zero arm. Nothing checks that the gauss arm is the manipulation intended.",
+   "evidence": "PREREG section 7 Q2 premise; blocking issue 1 (c): at H=192 D may barely move.",
+   "fix": "Log for every gauss run ||D_final - D_init||_F / ||D_init||_F, mean column norm at start and end, and the cluster-loss share of the validation loss at the saved epoch. Descriptive, not gating."
+  },
+  {
+   "severity": "minor",
+   "issue": "All paper quotes, including the one the whole D_gauss arm rests on, are still unverified against the PDF.",
+   "evidence": "PREREG 'Paper text status' and every [Q] mark.",
+   "fix": "As the draft already says: verify before FREEZE. If Alg. 1 or the appendix gives a scale, or cites EDESC (whose D is orthonormal), that decides blocking issue 1 and should be recorded as the reason."
+  }
+ ],
+ "summary": "Round-1 blockers are fixed in the rules: correct per-horizon config, corrected router premise with a routing measurement, symmetric CI rules with INCONCLUSIVE. The remaining way the answer can be built in is the choice D ~ N(0,1): it puts about 4.4 of constraint loss into the validation criterion for the gauss arm only (zero arm: 0.02), so checkpoint selection differs by arm for reasons unrelated to routing, and Q3 is judged on that arm alone. tfps_zero is a fair 'affinity-blind' control once D is drawn from a separate generator. Labels need the D-init and baseline set in the suffix."
+}

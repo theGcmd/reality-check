@@ -1,0 +1,81 @@
+{
+ "item": "GTR-SOLAR-1",
+ "step": "(a) design review, round 1 (prereg drafted this session, same step per QUEUE)",
+ "date_utc": "2026-11-25",
+ "prereg_reviewed": "audits/gtr/PREREG.md at commit 811b933 (draft r1, not frozen)",
+ "round_verdict": "NOT_LICENSED",
+ "foregone": "Split: foregone lens (session model) says NOT foregone (no outcome fixed by arm construction; harness CycleNet consumes every flag and matches official model code). Fable lens says NOT_LICENSED (FOREGONE): with ~2% seed CV and 5 seeds the CI on g is ~5-7 pp wide, so SHRINKS is unreachable and VANISHES fires only on a clear reversal; and the ANCHOR gate censors the outcome most damaging to the paper. Statistics lens independently confirms SHRINKS unreachable (Welch half-width ~3.3 pp). Recorded as NOT_LICENSED with a FOREGONE dissent on the verdict bands, not on the arms.",
+ "note": "Lens outputs condensed by the session agent from five subagent JSON reports; severities and verdicts unchanged. NOT re-checked by the session agent: the fairness lens's reading of ACAT-SCUT/CycleNet (raw.githubusercontent, main, commit not recorded): MLP-Input-96/solar.sh lr 0.01, bs 64, 30 ep, patience 5, use_revin 0, seeds 2024-2028; result.txt 5-seed Solar T=96 avg 0.2104/0.2616; models/CycleNet.py identical to the GTR harness copy up to whitespace. CycleNet repo is not in harness/repos.lock. Table 10 std (0.004) was read via a fetch summary, not verbatim.",
+ "lenses": [
+  {
+   "lens": "foregone",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    "blocking: SHRINKS and VANISHES overlap (lo>0, hi<1%); no precedence order",
+    "blocking: ANCHOR needs 5-seed G at lr 3e-3 but seeds 2028/2029 run only at the selected lr",
+    "major: SHRINKS reachability not shown (CI half-width ~2.5 pp under 2% CV); n=5 percentile bootstrap understates variance",
+    "major: anchor band +/-0.012 applied to a 5-seed mean (SE ~0.002) only catches gross drift; 0.205 would pass and wipe out g",
+    "major: setting string (run.py:128-136) has no lr -> shared checkpoints/<setting>/checkpoint.pth and result.txt across lr runs",
+    "minor: line refs wrong (CycleNet/GTR dispatch at exp_main.py:166-167,183-184,93-94,288-289); GTR has fixed Dropout(0.1) in its fusion block (GTR.py:24); CPU patch unnecessary (run.py:110, exp_basic.py:23); C-pub role unclear"
+   ]
+  },
+  {
+   "lens": "fairness",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    "blocking: CycleNet's published Solar lr is 0.01 (outside the grid) -> C's scored number undefined; 4-vs-3 lr search breaks 'same search'",
+    "major: closest test of the paper's claim is G-rel vs C-pub (App. A.3: baselines at original settings); prereg makes it secondary. Suggest CLAIM-AS-STATED verdict plus a ROBUSTNESS (tuned) verdict labelled as beyond the paper's protocol",
+    "major: no anchor on C; CycleNet result.txt 5-seed avg 0.2104 matches GTR Table 1 0.210 (suggests copied); add C-ANCHOR",
+    "minor: CycleNet published seeds 2024-2028 vs ours 2025-2029; G config matches Table 6 and solar.sh (P=24 default); README 'second-best' wording wrong by Table 1"
+   ]
+  },
+  {
+   "lens": "leakage",
+   "model": "session",
+   "verdict": "LICENSED",
+   "issues": [
+    "major: checkpoint/result paths lack lr (run.py:128-136, exp_main.py:121,257,340,348); safe only if sequential; wrapper must isolate per run",
+    "major: C-pub 4th lr for C only = budget asymmetry",
+    "minor: selection criterion = vali() batch-mean with val drop_last=True (data_factory.py:30-33); define as EarlyStopping.val_loss_min",
+    "minor: no test-driven selection or scheduling found (test loss printed only, exp_main.py:226); cycle_index is position mod 144, not leakage; scaler fit on train only (data_loader.py:466-469); all test windows kept",
+    "minor: freeze selected lr in a committed file before confirmation seeds or reading test"
+   ]
+  },
+  {
+   "lens": "statistics",
+   "model": "session",
+   "verdict": "NOT_LICENSED",
+   "issues": [
+    "blocking: SHRINKS unreachable: Welch t half-width ~3.3 pp at 2% CV, 5 seeds (needs width <4.1 pp; ~12-15 seeds/arm)",
+    "blocking: regions overlap and VANISHES needs point g <= -2.3% (true g=0 -> INCONCLUSIVE); propose disjoint partition: SURVIVES lo>=4.1; SHRINKS 0<lo<4.1 & hi<8.2; VANISHES lo<=0 & hi<4.1; else INCONCLUSIVE",
+    "major: use Welch t-interval on log A ratio (bootstrap ~23% too narrow)",
+    "major: anchor tolerance should be ~+/-0.0054 (3*0.004/sqrt5) or tied to the 0.016 gap",
+    "major: winner's curse from reusing selection seeds, likely favours C (~0.5 pp); score on fresh seeds or add sensitivity check",
+    "minor: 1e-6 two-path tolerance too tight in float32; use float64 and 1e-5"
+   ]
+  },
+  {
+   "lens": "answer_built_in",
+   "model": "fable",
+   "verdict": "NOT_LICENSED (FOREGONE)",
+   "issues": [
+    "blocking: only one decisive verdict realistically reachable (SURVIVES); SHRINKS impossible, VANISHES needs reversal",
+    "blocking: ANCHOR gate suppresses the gain verdict exactly when GTR fails to reproduce; report replication as its own verdict",
+    "major: no C anchor; in-harness C inherits GTR's knobs",
+    "major: 3-lr grid with 3e-3 at its edge, chosen for GTR, can hardly move C; add edge-extension rule for both",
+    "major: SURVIVES at lo>=4.1% labels a halved effect as surviving; split direction vs magnitude",
+    "minor: GTR backbone deeper than CycleNet; SURVIVES says nothing about retrieval as cause (Q-frozen arm or Not tested)"
+   ],
+   "best_single_change": "Re-derive bands and seed count from pilot seed noise so SHRINKS and VANISHES are reachable, and issue the gain verdict regardless of the anchor."
+  }
+ ],
+ "decisions_needed": [
+  "1 CycleNet lr: published 0.01 is outside {5e-4,1e-3,3e-3}. (a) both models search {5e-4,1e-3,3e-3,1e-2} (+edge extension), or (b) shared 3-lr grid plus C-pub at 0.01 as its own arm",
+  "2 Primary verdict: CLAIM-AS-STATED (G released vs C published, 5 seeds each) as primary, tuned comparison as labelled robustness \u2014 or the reverse",
+  "3 Seeds/budget: with 5 seeds SHRINKS is unreachable; raise to ~12-15 seeds per arm for the primary comparison, or accept a 3-way verdict (SURVIVES/VANISHES/INCONCLUSIVE); per-run CPU cost still to be measured (step c)",
+  "4 Pin ACAT-SCUT/CycleNet in harness/repos.lock (needed for a verified C-ANCHOR at 0.210)",
+  "5 Optional: GTR with Q frozen at zero (does retrieval cause the gain?) \u2014 new arm, owner call"
+ ]
+}

@@ -16,33 +16,33 @@
   }
  ],
  "wall_s": {
-  "released": 67.11513233184814,
-  "resumable_uninterrupted": 64.60527682304382
+  "released": 66.38317847251892,
+  "resumable_uninterrupted": 64.99517726898193
  },
  "segments": [
   {
    "tag": "seg",
    "finished": false,
    "seg_after": 1,
-   "wall_s": 17.3827166557312
+   "wall_s": 17.572678804397583
   },
   {
    "tag": "seg",
    "finished": false,
    "seg_after": 2,
-   "wall_s": 18.281707763671875
+   "wall_s": 17.931227207183838
   },
   {
    "tag": "seg",
    "finished": false,
    "seg_after": 3,
-   "wall_s": 17.535619258880615
+   "wall_s": 17.58539843559265
   },
   {
    "tag": "seg",
    "finished": true,
    "seg_after": null,
-   "wall_s": 17.50742745399475
+   "wall_s": 15.78993535041809
   }
  ]
 }

@@ -1,0 +1,133 @@
+{
+ "tests": [
+  {
+   "test": "driver refuses a scored TFPS seed before FREEZE",
+   "pass": true
+  },
+  {
+   "test": "driver refuses a scored baseline seed before FREEZE",
+   "pass": true
+  },
+  {
+   "test": "TFPS run segments and resumes through the driver (2 epochs -> 2 segments)",
+   "pass": true,
+   "segments": [
+    1,
+    null
+   ]
+  },
+  {
+   "test": "driver refuses to overwrite a finished run",
+   "pass": true
+  },
+  {
+   "test": "tfps_gauss: provenance.json has every \u00a77 field incl. per-segment start/end UTC and pid",
+   "pass": true,
+   "n_segments": 2,
+   "score_split": "val"
+  },
+  {
+   "test": "tfps_gauss: per_window_mse.npy float32, one value per window, draws K=5 x N",
+   "pass": true,
+   "N": 2689
+  },
+  {
+   "test": "tfps_gauss: self-test scored the VAL split (set_type 1), never test",
+   "pass": true
+  },
+  {
+   "test": "tfps_gauss: routing recorded per named router (time, freq)",
+   "pass": true
+  },
+  {
+   "test": "tfps_gauss: score recomputed from saved float32 arrays agrees with metrics.json (<1e-6)",
+   "pass": true,
+   "d_score": 2.8665070317401842e-11,
+   "d_draw": 1.5294052690961735e-09
+  },
+  {
+   "test": "tfps_gauss: pure-val-MSE checkpoint scored + files written",
+   "pass": true
+  },
+  {
+   "test": "tfps_gauss: per-epoch log has s row range per router (val pass)",
+   "pass": true,
+   "rowrange_time": [
+    0.10839094966650009,
+    0.11770258843898773
+   ]
+  },
+  {
+   "test": "tfps_gauss: no checkpoints / prediction arrays in the run dir",
+   "pass": true
+  },
+  {
+   "test": "tfps_gauss: noise-off routing has A == 1 exactly (indices == argmax s)",
+   "pass": true
+  },
+  {
+   "test": "tfps_zero: provenance.json has every \u00a77 field incl. per-segment start/end UTC and pid",
+   "pass": true,
+   "n_segments": 1,
+   "score_split": "val"
+  },
+  {
+   "test": "tfps_zero: per_window_mse.npy float32, one value per window, draws K=5 x N",
+   "pass": true,
+   "N": 2689
+  },
+  {
+   "test": "tfps_zero: self-test scored the VAL split (set_type 1), never test",
+   "pass": true
+  },
+  {
+   "test": "tfps_zero: routing recorded per named router (time, freq)",
+   "pass": true
+  },
+  {
+   "test": "tfps_zero: score recomputed from saved float32 arrays agrees with metrics.json (<1e-6)",
+   "pass": true,
+   "d_score": 7.639444632445702e-11,
+   "d_draw": 6.17950579595572e-10
+  },
+  {
+   "test": "tfps_zero: pure-val-MSE checkpoint scored + files written",
+   "pass": true
+  },
+  {
+   "test": "tfps_zero: per-epoch log has s row range per router (val pass)",
+   "pass": true,
+   "rowrange_time": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "test": "tfps_zero: no checkpoints / prediction arrays in the run dir",
+   "pass": true
+  },
+  {
+   "test": "tfps_zero: D stays 0, s row range == 0 (val log + scoring pass), A ~ 0.25 (premise checks feed Q2 rule 0)",
+   "pass": true,
+   "A": {
+    "time": 0.24914466344365932,
+    "freq": 0.2507964546919549
+   },
+   "H_r": {
+    "time": 1.386287740374205,
+    "freq": 1.3862728420811035
+   }
+  },
+  {
+   "test": "patchtst: run dir per lr, provenance + metrics + per-window file; recompute agrees (<1e-6)",
+   "pass": true,
+   "N": 2689
+  },
+  {
+   "test": "dlinear: run dir per lr, provenance + metrics + per-window file; recompute agrees (<1e-6)",
+   "pass": true,
+   "N": 2689
+  }
+ ],
+ "note": "VAL split scored; no test number computed"
+}

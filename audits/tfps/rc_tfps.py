@@ -11,9 +11,11 @@ Patches (file:line overridden, all at 83a11827):
                                      saved before each val pass, val MSE (criterion part) + aux parts recorded,
                                      checkpoint_valmse.pth saved at the lowest val MSE (ties -> earliest).
   P5 exp/exp_main.py:50-52           Exp_Main._get_data: remembers the val loader object; num_workers forced 0 by argv.
-  P6 exp/exp_main.py:277-397         Exp_Main.test replaced by the audit scoring pass (full test set, drop_last off,
+  P6 exp/exp_main.py:277-397         Exp_Main.test replaced by: the released test() (printed metric captured via
+                                     exp_main.py:5 `metric`), then the audit scoring pass (full test set, drop_last off,
                                      concatenation, K=5 eval-noise draws + noise-off), unless RC.prefreeze, in which
-                                     case NO test pass of any kind is run.
+                                     case NO test pass of any kind is run (driver self-test: val split only).
+  P4 also records, per val pass, the mean row range of s per router (eval-only router recording; no RNG use).
 """
 import os, sys, io, re, json, math, time, random, hashlib, runpy, socket, subprocess, contextlib
 import numpy as np
@@ -58,6 +60,7 @@ class _RC:
         self.best_valmse = math.inf; self.best_valmse_epoch = None
         self.ckpt_dir = None; self.prefreeze = True; self.instrument = True
         self.aux_rec = None; self.val_rng = {}; self.es = None; self.scores = None; self.seg_budget_s = None
+        self.score_flag = "test"; self.released_printed = None
 
 
 RC = _RC()
@@ -176,6 +179,8 @@ def _total_loss(self, *a, **k):
 
 
 _orig_vali = _E.Exp_Main.vali
+_orig_test_released = _E.Exp_Main.test
+_orig_metric = _E.metric
 
 
 def _vali(self, vali_data, vali_loader, criterion):
@@ -186,15 +191,22 @@ def _vali(self, vali_data, vali_loader, criterion):
     rng = {"torch": torch.get_rng_state(), "numpy": np.random.get_state(), "python": random.getstate()}
     rc = _RecCriterion(criterion)
     RC.aux_rec = {}
-    loss = _orig_vali(self, vali_data, vali_loader, rc)
+    saved_rec, saved_flag = RC.rec, RC.record
+    RC.rec = {}; RC.record = True  # eval-only router recording (numpy copies; no RNG use) for the s row-range log
+    try:
+        loss = _orig_vali(self, vali_data, vali_loader, rc)
+    finally:
+        vrec = RC.rec; RC.rec, RC.record = saved_rec, saved_flag
     aux = RC.aux_rec; RC.aux_rec = None
+    srange = {w: float(np.concatenate(vrec[w]["rrange"]).mean()) if w in vrec else float("nan") for w in ("time", "freq")}
     valmse = float(np.average(rc.vals))
     m = self.model
     Dt, Df = m.model_time.cluster.D.detach(), m.model_frequency.cluster.D.detach()
     rec = {"epoch": RC.epoch, "val_loss": repr(float(loss)), "val_mse": repr(valmse),
            "aux_time": float(np.average(aux.get("time", [np.nan]))), "aux_freq": float(np.average(aux.get("freq", [np.nan]))),
            "D_fro_time": float(Dt.norm()), "D_fro_freq": float(Df.norm()),
-           "D_colnorm_time": float(Dt.norm(dim=0).mean()), "D_colnorm_freq": float(Df.norm(dim=0).mean())}
+           "D_colnorm_time": float(Dt.norm(dim=0).mean()), "D_colnorm_freq": float(Df.norm(dim=0).mean()),
+           "s_rowrange_time": srange["time"], "s_rowrange_freq": srange["freq"]}
     RC.epochs.append(rec)
     RC.val_rng[RC.epoch] = rng
     if np.isfinite(valmse) and valmse < RC.best_valmse:
@@ -207,7 +219,9 @@ def _vali(self, vali_data, vali_loader, criterion):
 
 
 def full_test_loader(args):
-    ds, _ = _data_provider(args, "test")
+    """Full test set, drop_last off. RC.score_flag = 'val' is used ONLY by the pre-FREEZE driver self-test (scores the
+    val split so the file-writing path can be tested without any test number)."""
+    ds, _ = _data_provider(args, RC.score_flag)
     return ds, DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=0, drop_last=False)
 
 
@@ -228,7 +242,7 @@ def eval_pass(model, loader, args):
 def score_checkpoint(exp, ckpt, seed, tag):
     sd = torch.load(ckpt); exp.model.load_state_dict(sd)
     ds, dl = full_test_loader(exp.args)
-    out = {"checkpoint": ckpt, "checkpoint_sha256": sha256(ckpt), "n_windows": len(ds), "draws": []}
+    out = {"checkpoint": ckpt, "checkpoint_sha256": sha256(ckpt), "n_windows": len(ds), "set_type": int(ds.set_type), "draws": []}
     for k in range(1, K_DRAWS + 1):
         torch.manual_seed(noise_seed(k, seed)); RC.rec = {}; RC.record = True
         m, a = eval_pass(exp.model, dl, exp.args)
@@ -242,8 +256,20 @@ def score_checkpoint(exp, ckpt, seed, tag):
 
 
 def _test(self, setting, test=0):
-    if RC.prefreeze:
+    if RC.prefreeze and RC.score_flag == "test":
         return  # leakage guard: no test pass at all before FREEZE
+    if not RC.prefreeze:
+        # the repo's own released test() first, with the RNG exactly as training left it (as run_longExp.py does);
+        # its printed metric is captured (§6: recorded, uses its own noise draw, not expected to match the score)
+        cap = {}
+        def _m(p, t):
+            r = _orig_metric(p, t); cap["mae"], cap["mse"] = float(r[0]), float(r[1]); return r
+        _E.metric = _m
+        try:
+            _orig_test_released(self, setting, 0)
+        finally:
+            _E.metric = _orig_metric
+        RC.released_printed = cap
     RC.scores = {"released": score_checkpoint(self, os.path.join(RC.ckpt_dir, "checkpoint.pth"), RC.seed, "released"),
                  "valmse": score_checkpoint(self, os.path.join(RC.ckpt_dir, "checkpoint_valmse.pth"), RC.seed, "valmse")}
 
@@ -331,8 +357,18 @@ def resumable_train(self, setting):
     return self.model
 
 
+_orig_exp_init = _E.Exp_Main.__init__
+
+
+def _exp_init(self, *a, **k):
+    """Names the two routers 'time' / 'freq' for the eval-only recording (a plain attribute; not in state_dict)."""
+    _orig_exp_init(self, *a, **k)
+    name_routers(self.model)
+
+
 def install_hooks(instrument=True):
     RC.instrument = instrument
+    _E.Exp_Main.__init__ = _exp_init
     _E.EarlyStopping = RCEarlyStopping if instrument else _T.EarlyStopping
     _E.Exp_Main._get_data = _get_data
     _E.Exp_Main.vali = _vali

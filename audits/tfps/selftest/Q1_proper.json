@@ -1,0 +1,148 @@
+{
+ "processes": 10,
+ "processes_with_nonfinite_D": 10,
+ "fraction_finite": 0.0,
+ "per_process": [
+  {
+   "time": {
+    "nonfinite": 665,
+    "numel": 12544,
+    "nan": 665,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 625,
+    "numel": 12544,
+    "nan": 625,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 637,
+    "numel": 12544,
+    "nan": 637,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 652,
+    "numel": 12544,
+    "nan": 652,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 683,
+    "numel": 12544,
+    "nan": 683,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 736,
+    "numel": 12544,
+    "nan": 736,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 630,
+    "numel": 12544,
+    "nan": 630,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 625,
+    "numel": 12544,
+    "nan": 625,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 616,
+    "numel": 12544,
+    "nan": 616,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 638,
+    "numel": 12544,
+    "nan": 638,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  },
+  {
+   "time": {
+    "nonfinite": 642,
+    "numel": 12544,
+    "nan": 642,
+    "inf": 0
+   },
+   "freq": {
+    "nonfinite": 0,
+    "numel": 12544,
+    "nan": 0,
+    "inf": 0
+   }
+  }
+ ],
+ "context": "released run_longExp.py via runpy, H=192 argv, seed 2021, CPU, torch 2.4.1; stopped at Exp_Main.train entry (no data, no training)"
+}

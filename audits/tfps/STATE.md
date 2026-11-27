@@ -154,3 +154,52 @@
 3. Q1 proper (10 fresh processes, released pipeline, D non-finite count).
 4. Epochs-to-stop for tfps_gauss_unit / tfps_zero at H=192 and H=336 (seed 999), then the budget line.
 5. Then step (d) FREEZE — still needs the PDF check in PAPER_EXTRACT.md.
+
+## 2026-11-27 ~12:13-13:00 UTC — step (c) part 2: battery driver, s row-range log, Q1 proper, epochs-to-stop
+- `rc_tfps.py` (sha256 5f5237c52240) changes: (1) P4 val hook now also logs the mean row range of s per router per val
+  pass (eval-only router recording; numpy copies, no RNG use) — `s_rowrange_time|freq` in epochs.json; (2) new P8
+  `exp/exp_main.py` Exp_Main.__init__ wrapper names the two routers time/freq (plain attribute, not in state_dict).
+  **Bug found and fixed by the driver self-test:** before P8 the routers were unnamed in the real run pipeline (only the
+  self-test builder named them), so scoring-pass routing records of time and freq would have been merged under "?";
+  (3) P6 now runs the repo's released `test()` first (RNG as training left it, as run_longExp.py does) and captures
+  its printed MSE/MAE via `exp_main.py:5 metric` (§6 "repo's own printed metric"); then the audit scoring pass.
+  Repo's results/ (pred.npy) and test_results/ are deleted from the run dir.
+- New `run_battery.py` (a7fbf797d049): one (arm, H, seed[, lr]) per call; `runs/<arm>/<H>/seed<k>[/lr<x>]/` with
+  provenance.json (all §7 fields, per-segment start/end UTC + pid, file sha256s), metrics.json (per-draw, mean,
+  released-loader score, nonoise, pure-val-MSE, routing A/H_r/row max/range averaged over the K=5 draws, repo-printed
+  metric, training summary incl. D_maxabs_final and aux share), per_window_mse.npy (float32; per window mean of the 5
+  draws), per-draw / nonoise / valmse arrays. TFPS runs resume by segment; baselines restart from scratch. Refuses any
+  seed ≠ 999 unless a `FREEZE tfps` commit exists and PREREG.md is unchanged since; refuses to overwrite a finished run.
+- New `selftest_battery.py` (d6e07b3978ed): **24/24 PASS** (seed 999, H=192, 2 epochs, scores the VAL split only —
+  set_type 1 asserted; no test number computed): refusals (scored seed pre-FREEZE ×2, overwrite), segment+resume
+  through the driver, provenance fields, float32 per-window files K×N, score recomputed from saved arrays < 1e-6,
+  pure-val-MSE files, s row-range logged, no .pth/prediction arrays in run dirs, routing per named router, tfps_zero
+  premise (D stays 0, s row range exactly 0 in val log and scoring pass, A 0.249/0.251, H_r ≈ ln 4), noise-off A == 1,
+  baselines per-lr dirs + recompute.
+- Re-run after the rc_tfps change: `selftest_tfps.py` fast 20/20, train 7/7 (instrumentation on/off still bitwise),
+  resume 2/2 (bitwise). Baseline wrapper unchanged (6/6 from part 1 stands).
+- **Q1 proper** (`q1_released.py`, b10891078429; released run_longExp.py via runpy, H=192 argv, seed 2021, no audit
+  patch, stopped at Exp_Main.train entry, no data): **10/10 fresh processes give a non-finite D**; time-D 616-736 of
+  12544 entries non-finite every time, freq-D 0 in 9 processes and 683 in 1. (Earlier figures differ: r1 4586-4635
+  in another context; part-1 bare EDESC 5.) Descriptive only; says nothing about the authors' D. `selftest/Q1_proper.json`.
+- Epochs-to-stop at seed 999 (test lines filtered, no test number seen; only val quantities read):
+  tfps_zero 192: stop 23 (best 3), ~6 min; tfps_gauss_unit 192: stop 23 (best 3), ~6.3 min; tfps_zero 336: stop 22
+  (best 2), ~7.4 min; tfps_gauss_unit 336: stop 23 (best 3), ~7.8 min. Val-pass mean row range of s, unit arm:
+  H=192 rises 0.005→0.017 (time) / 0.009→0.031 (freq); H=336 falls to ~0.001-0.004. tfps_zero: exactly 0 every epoch.
+  tfps_gauss 336 still measured on 2 epochs only (assume ~100 epochs × 17-20 s ≈ 30 min).
+- **Budget line (measured):** per seed per H ≈ 27-30 min (gauss) + ~7 (unit) + ~7 (zero) ≈ 42-45 min TFPS → 30 TFPS
+  runs ≈ 7-7.5 CPU-h; baselines 80 runs ≈ 2-3.5 CPU-h (PatchTST ~7 s/epoch, DLinear < 1 s/epoch, stop epochs not yet
+  measured); eval ≈ 0.3 CPU-h → **≈ 10-11 CPU-h at n = 5**, up to ~2× with the extension. At ~45 min of runs per
+  session that is ~14 sessions at n = 5.
+- 0 scored runs. Nothing frozen. No H = 192 / 336 test number seen.
+
+## Patches in force (none used for scoring yet)
+- P1-P7 as in part 1; P4 extended (s row range); P6 extended (released test() first, metric captured);
+  **P8** `exp/exp_main.py` Exp_Main.__init__ (wrapper after the released init): router naming only.
+  Baselines B1-B2 unchanged. num_workers 0 via argv for all.
+
+## Next
+1. Step (c) is complete. Step (d) FREEZE — blocked on the PDF check (Table 1 headers + full ETTh1 H=192/336 rows
+   for all 9 models + input-length context) recorded in PAPER_EXTRACT.md, then recompute m_{H,B}, m_H, anchors.
+   FREEZE should also add the measured budget line to PREREG §8 (transcription, not design).
+2. Then step (e) chunks via `run_battery.py` (first chunk suggestion: seed 2021 H=192, zero + unit + baselines).

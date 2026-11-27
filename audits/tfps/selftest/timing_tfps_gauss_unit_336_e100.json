@@ -1,0 +1,15 @@
+{
+ "segments": [
+  {
+   "arm": "tfps_gauss_unit",
+   "H": 336,
+   "seed": 999,
+   "epochs_done": 23,
+   "finished": true,
+   "segment_wall_s": 467.42901587486267,
+   "best_epoch_released_criterion": 3,
+   "aux_share_last": 9.38880433284179e-06,
+   "stop_epoch": 23
+  }
+ ]
+}

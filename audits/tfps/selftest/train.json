@@ -31,11 +31,11 @@
  ],
  "timing": {
   "on": {
-   "wall_s_2_epochs": 34.05035424232483,
+   "wall_s_2_epochs": 33.34151339530945,
    "filtered_lines": 5
   },
   "off": {
-   "wall_s_2_epochs": 34.52521300315857,
+   "wall_s_2_epochs": 32.72886896133423,
    "filtered_lines": 5
   }
  },
@@ -49,7 +49,9 @@
    "D_fro_time": 112.76296997070312,
    "D_fro_freq": 111.15148162841797,
    "D_colnorm_time": 10.63035774230957,
-   "D_colnorm_freq": 10.48618221282959
+   "D_colnorm_freq": 10.48618221282959,
+   "s_rowrange_time": 0.10839094966650009,
+   "s_rowrange_freq": 0.12214403599500656
   },
   {
    "epoch": 2,
@@ -60,7 +62,9 @@
    "D_fro_time": 110.22571563720703,
    "D_fro_freq": 108.63786315917969,
    "D_colnorm_time": 10.39039421081543,
-   "D_colnorm_freq": 10.248595237731934
+   "D_colnorm_freq": 10.248595237731934,
+   "s_rowrange_time": 0.11770258843898773,
+   "s_rowrange_freq": 0.1345997452735901
   }
  ]
 }

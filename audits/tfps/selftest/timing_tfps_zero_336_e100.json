@@ -1,0 +1,15 @@
+{
+ "segments": [
+  {
+   "arm": "tfps_zero",
+   "H": 336,
+   "seed": 999,
+   "epochs_done": 22,
+   "finished": true,
+   "segment_wall_s": 446.547212600708,
+   "best_epoch_released_criterion": 2,
+   "aux_share_last": 0.013933094222600997,
+   "stop_epoch": 22
+  }
+ ]
+}

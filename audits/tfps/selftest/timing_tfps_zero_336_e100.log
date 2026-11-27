@@ -1,0 +1,234 @@
+Args in experiment:
+Use CPU
+patch_num_in, patch_num_out, patch_len 12 42 16
+>>>>>>>start training : tfps_zero_336_s999_PatchTST_MoE_cluster_ETTh1_ftM_sl96_ll48_pl336_T_e4_T_topk1_F_e4_F_topk1_lr0.005_beta0.1_dm16_nh4_el3_dl1_df128_fc1_ebtimeF_dtTrue_Exp_0>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 8209
+val 2545
+Model(
+  (revin_layer): RevIN()
+  (padding_patch_layer): ReplicationPad1d((0, 8))
+  (model_time): PatchTST_MoE_cluster_time(
+    (backbone): TSTiEncoder(
+      (W_P): Linear(in_features=16, out_features=16, bias=True)
+      (dropout): Dropout(p=0.3, inplace=False)
+      (encoder): TSTEncoder(
+        (layers): ModuleList(
+          (0-2): 3 x TSTEncoderLayer(
+            (self_attn): _MultiheadAttention(
+              (W_Q): Linear(in_features=16, out_features=16, bias=True)
+              (W_K): Linear(in_features=16, out_features=16, bias=True)
+              (W_V): Linear(in_features=16, out_features=16, bias=True)
+              (sdp_attn): _ScaledDotProductAttention(
+                (attn_dropout): Dropout(p=0.0, inplace=False)
+              )
+              (to_out): Sequential(
+                (0): Linear(in_features=16, out_features=16, bias=True)
+                (1): Dropout(p=0.3, inplace=False)
+              )
+            )
+            (dropout_attn): Dropout(p=0.3, inplace=False)
+            (norm_attn): Sequential(
+              (0): Transpose()
+              (1): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (2): Transpose()
+            )
+            (ff): Sequential(
+              (0): Linear(in_features=16, out_features=128, bias=True)
+              (1): GELU(approximate='none')
+              (2): Dropout(p=0.3, inplace=False)
+              (3): Linear(in_features=128, out_features=16, bias=True)
+            )
+            (dropout_ffn): Dropout(p=0.3, inplace=False)
+            (norm_ffn): Sequential(
+              (0): Transpose()
+              (1): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (2): Transpose()
+            )
+          )
+        )
+      )
+    )
+    (project): Linear(in_features=12, out_features=42, bias=True)
+    (cluster): EDESC()
+    (SaprseMoE): SparseMoE(
+      (router): NoisyTopkRouter_Cluster()
+      (experts): ModuleList(
+        (0-3): 4 x Expert(
+          (net): Sequential(
+            (0): Linear(in_features=112, out_features=448, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=448, out_features=112, bias=True)
+            (3): Dropout(p=0.1, inplace=False)
+          )
+        )
+      )
+    )
+    (head): Flatten_Head(
+      (linears): ModuleList(
+        (0-6): 7 x Linear(in_features=672, out_features=336, bias=True)
+      )
+      (dropouts): ModuleList(
+        (0-6): 7 x Dropout(p=0.0, inplace=False)
+      )
+      (flattens): ModuleList(
+        (0-6): 7 x Flatten(start_dim=-2, end_dim=-1)
+      )
+    )
+  )
+  (model_frequency): PatchTST_MoE_cluster_frequency(
+    (backbone): TSTiEncoder(
+      (W_P): Linear(in_features=16, out_features=16, bias=True)
+      (dropout): Dropout(p=0.3, inplace=False)
+      (encoder): TSTEncoder(
+        (layers): ModuleList(
+          (0-2): 3 x TSTEncoderLayer(
+            (self_FNet): _FNetBlock()
+            (dropout_attn): Dropout(p=0.3, inplace=False)
+            (norm_attn): LayerNorm((16,), eps=1e-05, elementwise_affine=True)
+            (ff): Sequential(
+              (0): Linear(in_features=16, out_features=128, bias=True)
+              (1): GELU(approximate='none')
+              (2): Dropout(p=0.3, inplace=False)
+              (3): Linear(in_features=128, out_features=16, bias=True)
+            )
+            (dropout_ffn): Dropout(p=0.3, inplace=False)
+            (norm_ffn): LayerNorm((16,), eps=1e-05, elementwise_affine=True)
+          )
+        )
+      )
+    )
+    (project): Linear(in_features=12, out_features=42, bias=True)
+    (cluster): EDESC()
+    (SaprseMoE): SparseMoE(
+      (router): NoisyTopkRouter_Cluster()
+      (experts): ModuleList(
+        (0-3): 4 x Expert(
+          (net): Sequential(
+            (0): Linear(in_features=112, out_features=448, bias=True)
+            (1): ReLU()
+            (2): Linear(in_features=448, out_features=112, bias=True)
+            (3): Dropout(p=0.1, inplace=False)
+          )
+        )
+      )
+    )
+    (head): Flatten_Head(
+      (linears): ModuleList(
+        (0-6): 7 x Linear(in_features=672, out_features=336, bias=True)
+      )
+      (dropouts): ModuleList(
+        (0-6): 7 x Dropout(p=0.0, inplace=False)
+      )
+      (flattens): ModuleList(
+        (0-6): 7 x Flatten(start_dim=-2, end_dim=-1)
+      )
+    )
+  )
+  (head): Flatten_Head(
+    (linears): ModuleList(
+      (0-6): 7 x Linear(in_features=1344, out_features=336, bias=True)
+    )
+    (dropouts): ModuleList(
+      (0-6): 7 x Dropout(p=0.0, inplace=False)
+    )
+    (flattens): ModuleList(
+      (0-6): 7 x Flatten(start_dim=-2, end_dim=-1)
+    )
+  )
+)
+[INFO] Register count_linear() for <class 'torch.nn.modules.linear.Linear'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.dropout.Dropout'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.container.Sequential'>.
+[INFO] Register count_normalization() for <class 'torch.nn.modules.batchnorm.BatchNorm1d'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.activation.ReLU'>.
+[INFO] Register count_normalization() for <class 'torch.nn.modules.normalization.LayerNorm'>.
+FLOPs:  1809088512.0
+params:  4001460.0
+Epoch: 1 cost time: 17.45544123649597
+Epoch: 1, Steps: 64 | Train Loss: 0.6119744 Vali Loss: 1.4260759
+Validation loss decreased (inf --> 1.426076).  Saving model ...
+Updating learning rate to 0.005
+Epoch: 2 cost time: 18.019216060638428
+Epoch: 2, Steps: 64 | Train Loss: 0.5225894 Vali Loss: 1.3613230
+Validation loss decreased (1.426076 --> 1.361323).  Saving model ...
+Updating learning rate to 0.005
+Epoch: 3 cost time: 16.794944524765015
+Epoch: 3, Steps: 64 | Train Loss: 0.4541811 Vali Loss: 1.3789800
+EarlyStopping counter: 1 out of 20
+Updating learning rate to 0.005
+Epoch: 4 cost time: 17.76727032661438
+Epoch: 4, Steps: 64 | Train Loss: 0.4053882 Vali Loss: 1.4029549
+EarlyStopping counter: 2 out of 20
+Updating learning rate to 0.0045000000000000005
+Epoch: 5 cost time: 17.239648818969727
+Epoch: 5, Steps: 64 | Train Loss: 0.3751763 Vali Loss: 1.4589118
+EarlyStopping counter: 3 out of 20
+Updating learning rate to 0.004050000000000001
+Epoch: 6 cost time: 17.61938762664795
+Epoch: 6, Steps: 64 | Train Loss: 0.3473216 Vali Loss: 1.4758123
+EarlyStopping counter: 4 out of 20
+Updating learning rate to 0.0036450000000000007
+Epoch: 7 cost time: 17.79980182647705
+Epoch: 7, Steps: 64 | Train Loss: 0.3244617 Vali Loss: 1.5352156
+EarlyStopping counter: 5 out of 20
+Updating learning rate to 0.0032805
+Epoch: 8 cost time: 16.608291387557983
+Epoch: 8, Steps: 64 | Train Loss: 0.3071872 Vali Loss: 1.5540891
+EarlyStopping counter: 6 out of 20
+Updating learning rate to 0.0029524500000000006
+Epoch: 9 cost time: 18.00336217880249
+Epoch: 9, Steps: 64 | Train Loss: 0.2922341 Vali Loss: 1.5190075
+EarlyStopping counter: 7 out of 20
+Updating learning rate to 0.002657205
+Epoch: 10 cost time: 16.73046374320984
+Epoch: 10, Steps: 64 | Train Loss: 0.2797948 Vali Loss: 1.5205172
+EarlyStopping counter: 8 out of 20
+Updating learning rate to 0.0023914845000000003
+Epoch: 11 cost time: 17.122841835021973
+Epoch: 11, Steps: 64 | Train Loss: 0.2690314 Vali Loss: 1.5202247
+EarlyStopping counter: 9 out of 20
+Updating learning rate to 0.0021523360500000006
+Epoch: 12 cost time: 15.846534490585327
+Epoch: 12, Steps: 64 | Train Loss: 0.2604522 Vali Loss: 1.5222291
+EarlyStopping counter: 10 out of 20
+Updating learning rate to 0.0019371024450000004
+Epoch: 13 cost time: 16.333499431610107
+Epoch: 13, Steps: 64 | Train Loss: 0.2529419 Vali Loss: 1.5347930
+EarlyStopping counter: 11 out of 20
+Updating learning rate to 0.0017433922005000006
+Epoch: 14 cost time: 15.648441791534424
+Epoch: 14, Steps: 64 | Train Loss: 0.2461882 Vali Loss: 1.5203517
+EarlyStopping counter: 12 out of 20
+Updating learning rate to 0.0015690529804500003
+Epoch: 15 cost time: 16.71234893798828
+Epoch: 15, Steps: 64 | Train Loss: 0.2407320 Vali Loss: 1.5161030
+EarlyStopping counter: 13 out of 20
+Updating learning rate to 0.0014121476824050007
+Epoch: 16 cost time: 16.469077348709106
+Epoch: 16, Steps: 64 | Train Loss: 0.2355468 Vali Loss: 1.5341832
+EarlyStopping counter: 14 out of 20
+Updating learning rate to 0.0012709329141645004
+Epoch: 17 cost time: 16.245652437210083
+Epoch: 17, Steps: 64 | Train Loss: 0.2316367 Vali Loss: 1.5203067
+EarlyStopping counter: 15 out of 20
+Updating learning rate to 0.0011438396227480504
+Epoch: 18 cost time: 17.244842529296875
+Epoch: 18, Steps: 64 | Train Loss: 0.2284578 Vali Loss: 1.5144024
+EarlyStopping counter: 16 out of 20
+Updating learning rate to 0.0010294556604732454
+Epoch: 19 cost time: 16.1679470539093
+Epoch: 19, Steps: 64 | Train Loss: 0.2249758 Vali Loss: 1.5340393
+EarlyStopping counter: 17 out of 20
+Updating learning rate to 0.0009265100944259208
+Epoch: 20 cost time: 17.00060510635376
+Epoch: 20, Steps: 64 | Train Loss: 0.2224914 Vali Loss: 1.5129200
+EarlyStopping counter: 18 out of 20
+Updating learning rate to 0.0008338590849833288
+Epoch: 21 cost time: 16.09492301940918
+Epoch: 21, Steps: 64 | Train Loss: 0.2196021 Vali Loss: 1.5411195
+EarlyStopping counter: 19 out of 20
+Updating learning rate to 0.0007504731764849959
+Epoch: 22 cost time: 16.455739498138428
+Epoch: 22, Steps: 64 | Train Loss: 0.2176346 Vali Loss: 1.5191232
+EarlyStopping counter: 20 out of 20
+Early stopping

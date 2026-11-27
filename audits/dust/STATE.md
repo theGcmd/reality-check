@@ -19,3 +19,6 @@
 
 ## Patches in force
 - None (no wrapper yet). Planned: CPU path (remove CUDA refusal), gradient accumulation, val-only/test-refusal guard.
+
+## 2026-11-27 19:30 London — reviewing chat
+- P1 partially done: `audits/dust/PAPER_EXTRACT.md`. Table 1 values are not on the page; the 1M SGD advantage is claimed verbatim but qualitatively. P2 (data) and the r1 owner decisions still open.

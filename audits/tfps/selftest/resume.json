@@ -1,0 +1,48 @@
+{
+ "tests": [
+  {
+   "test": "resumable train() (uninterrupted, 4 epochs) bitwise equal to released train(): checkpoints, val losses, RNG",
+   "pass": true
+  },
+  {
+   "test": "run interrupted after EVERY epoch (4 processes) and resumed == uninterrupted at epoch 4, bitwise",
+   "pass": true,
+   "segments": [
+    1,
+    2,
+    3,
+    null
+   ]
+  }
+ ],
+ "wall_s": {
+  "released": 67.11513233184814,
+  "resumable_uninterrupted": 64.60527682304382
+ },
+ "segments": [
+  {
+   "tag": "seg",
+   "finished": false,
+   "seg_after": 1,
+   "wall_s": 17.3827166557312
+  },
+  {
+   "tag": "seg",
+   "finished": false,
+   "seg_after": 2,
+   "wall_s": 18.281707763671875
+  },
+  {
+   "tag": "seg",
+   "finished": false,
+   "seg_after": 3,
+   "wall_s": 17.535619258880615
+  },
+  {
+   "tag": "seg",
+   "finished": true,
+   "seg_after": null,
+   "wall_s": 17.50742745399475
+  }
+ ]
+}

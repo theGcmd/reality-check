@@ -1,0 +1,45 @@
+{
+ "segments": [
+  {
+   "arm": "tfps_gauss",
+   "H": 192,
+   "seed": 999,
+   "epochs_done": 31,
+   "finished": false,
+   "segment_wall_s": 507.10840106010437,
+   "best_epoch_released_criterion": 31,
+   "aux_share_last": 0.6767748975691229
+  },
+  {
+   "arm": "tfps_gauss",
+   "H": 192,
+   "seed": 999,
+   "epochs_done": 63,
+   "finished": false,
+   "segment_wall_s": 513.6492078304291,
+   "best_epoch_released_criterion": 63,
+   "aux_share_last": 0.6687675510298315
+  },
+  {
+   "arm": "tfps_gauss",
+   "H": 192,
+   "seed": 999,
+   "epochs_done": 95,
+   "finished": false,
+   "segment_wall_s": 509.05428409576416,
+   "best_epoch_released_criterion": 92,
+   "aux_share_last": 0.6684380584466908
+  },
+  {
+   "arm": "tfps_gauss",
+   "H": 192,
+   "seed": 999,
+   "epochs_done": 100,
+   "finished": true,
+   "segment_wall_s": 82.65567207336426,
+   "best_epoch_released_criterion": 100,
+   "aux_share_last": 0.6687417600325808,
+   "stop_epoch": 100
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+[
+ {
+  "test": "seed sets pairwise disjoint",
+  "pass": true
+ },
+ {
+  "test": "gauss: time-D is the 900000+seed draw, freq-D the 910000+seed draw",
+  "pass": true
+ },
+ {
+  "test": "gauss: finite, mean~0, sd~1",
+  "pass": true,
+  "shape": [
+   112,
+   112
+  ],
+  "mean": -0.0008805299876257777,
+  "sd": 1.0077720880508423
+ },
+ {
+  "test": "gauss_unit == gauss/sqrt(112) exactly; mean column norm ~1",
+  "pass": true,
+  "colnorm": 1.0053952932357788
+ },
+ {
+  "test": "time-D != freq-D",
+  "pass": true
+ },
+ {
+  "test": "zero: D == 0 at init",
+  "pass": true
+ },
+ {
+  "test": "all non-D parameters bitwise equal across arms at construction",
+  "pass": true,
+  "n_tensors": 177
+ },
+ {
+  "test": "global RNG state after construction equal across arms",
+  "pass": true
+ },
+ {
+  "test": "zero: D still == 0 after 3 Adam steps",
+  "pass": true,
+  "max_grad_time": 0.0
+ },
+ {
+  "test": "router noise-off: indices == argmax s on every row",
+  "pass": true
+ },
+ {
+  "test": "router noise-on (eval): bit-identical to released forward",
+  "pass": true
+ },
+ {
+  "test": "router train mode ignores the eval-only switch",
+  "pass": true
+ },
+ {
+  "test": "router recording: eval only",
+  "pass": true
+ },
+ {
+  "test": "A ceiling simulated (one-hot s, n=4, 100k rows)",
+  "pass": true,
+  "A_ceiling_onehot": 0.6158900260925293,
+  "A_uniform": 0.24977999925613403,
+  "rows": 100000
+ },
+ {
+  "test": "eval pass: rows == dataset length (drop_last off)",
+  "pass": true,
+  "N": 2689,
+  "released_rows": 2688
+ },
+ {
+  "test": "eval pass: first floor(N/128)*128 rows reproduce drop_last pass (same RNG) to 1e-6",
+  "pass": true,
+  "abs_diff": 0.0
+ },
+ {
+  "test": "eval pass: mean per-window MSE/MAE == utils.metrics MSE/MAE on concatenated arrays to 1e-6",
+  "pass": true,
+  "abs_diff_mse": 1.1719881898297757e-07,
+  "abs_diff_mae": 1.2288004613836279e-07
+ },
+ {
+  "test": "eval pass: same noise seed -> identical per-window MSE",
+  "pass": true
+ },
+ {
+  "test": "eval pass: different noise seed -> different routing (draws differ)",
+  "pass": true
+ },
+ {
+  "test": "extension_trigger extension_trigger selftest: 7/7 PASS",
+  "pass": true
+ }
+]

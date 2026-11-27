@@ -1,0 +1,66 @@
+{
+ "tests": [
+  {
+   "test": "instrumentation leaves training unchanged: checkpoint state_dict bitwise equal",
+   "pass": true
+  },
+  {
+   "test": "instrumentation leaves training unchanged: global torch + numpy RNG equal at end",
+   "pass": true
+  },
+  {
+   "test": "val hook fired exactly once per epoch (val loader only)",
+   "pass": true
+  },
+  {
+   "test": "EarlyStopping: val_loss_min == min per-epoch val loss; saved epoch matches",
+   "pass": true
+  },
+  {
+   "test": "val hook: restoring saved RNG on saved checkpoint reproduces val loss and val MSE to 1e-6",
+   "pass": true
+  },
+  {
+   "test": "pure-val-MSE checkpoint saved at argmin val MSE (ties earliest); checkpoint.pth untouched",
+   "pass": true
+  },
+  {
+   "test": "pre-FREEZE: no result files, no test_results dir in run dirs",
+   "pass": true
+  }
+ ],
+ "timing": {
+  "on": {
+   "wall_s_2_epochs": 34.05035424232483,
+   "filtered_lines": 5
+  },
+  "off": {
+   "wall_s_2_epochs": 34.52521300315857,
+   "filtered_lines": 5
+  }
+ },
+ "per_epoch_on": [
+  {
+   "epoch": 1,
+   "val_loss": "5.802339372180757",
+   "val_mse": "1.4098938192640031",
+   "aux_time": 2.233682428087507,
+   "aux_freq": 2.158763124829247,
+   "D_fro_time": 112.76296997070312,
+   "D_fro_freq": 111.15148162841797,
+   "D_colnorm_time": 10.63035774230957,
+   "D_colnorm_freq": 10.48618221282959
+  },
+  {
+   "epoch": 2,
+   "val_loss": "5.203726041884649",
+   "val_mse": "1.0612579640888034",
+   "aux_time": 2.107769318989345,
+   "aux_freq": 2.034698804219564,
+   "D_fro_time": 110.22571563720703,
+   "D_fro_freq": 108.63786315917969,
+   "D_colnorm_time": 10.39039421081543,
+   "D_colnorm_freq": 10.248595237731934
+  }
+ ]
+}

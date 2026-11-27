@@ -1,0 +1,38 @@
+{
+ "tests": [
+  {
+   "test": "patchtst: instrumentation leaves training unchanged (state_dict, torch+numpy RNG bitwise)",
+   "pass": true
+  },
+  {
+   "test": "patchtst: EarlyStopping val_loss_min == min per-epoch val loss; saved epoch matches",
+   "pass": true
+  },
+  {
+   "test": "patchtst: released-loader score (first floor(N/128)*128 windows) == repo printed test MSE to 1e-5",
+   "pass": true,
+   "abs_diff": 1.0676720330060618e-07,
+   "N": 2689
+  },
+  {
+   "test": "dlinear: instrumentation leaves training unchanged (state_dict, torch+numpy RNG bitwise)",
+   "pass": true
+  },
+  {
+   "test": "dlinear: EarlyStopping val_loss_min == min per-epoch val loss; saved epoch matches",
+   "pass": true
+  },
+  {
+   "test": "dlinear: released-loader score (first floor(N/128)*128 windows) == repo printed test MSE to 1e-5",
+   "pass": true,
+   "abs_diff": 4.0722027583317555e-08,
+   "N": 2689
+  }
+ ],
+ "timing_wall_s_2_epochs": {
+  "patchtst_on": 15.37528133392334,
+  "patchtst_off": 14.414104223251343,
+  "dlinear_on": 1.2277884483337402,
+  "dlinear_off": 1.315840482711792
+ }
+}

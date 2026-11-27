@@ -107,3 +107,50 @@
 
 ## Patches in force
 - None used for scoring. Planned patches listed in PREREG.md §8.
+
+## 2026-11-27 ~09:12-10:00 UTC — step (c) part 1: wrappers + self-tests + timing (seed 999, test lines filtered)
+- New files: `rc_tfps.py` (TFPS wrapper, patches P1-P7), `rc_patchtst.py` (official-PatchTST baseline wrapper, B1-B2),
+  `extension_trigger.py` (+ `--selftest`), `selftest_tfps.py` (fast / train / resume), `timing_tfps.py`. Results in
+  `audits/tfps/selftest/*.json|log`. **35/35 self-tests PASS** (fast 20 incl. extension_trigger 7/7 as one, train 7, resume 2,
+  baselines 6; 0 `"pass": false` in any file).
+  - D init: time-D = Generator(900000+seed), freq-D = Generator(910000+seed); gauss sd 1.008; unit = gauss/√112
+    exactly (col norm 1.005); zero stays 0 after 3 Adam steps (grad exactly 0); 177 non-D tensors bitwise equal across
+    the 3 arms; global RNG equal after construction. Seed sets disjoint.
+  - Router: noise-off ⇒ indices == argmax s; noise-on eval path bit-identical to released forward; train path ignores
+    the switch; recording eval-only. **A ceiling (one-hot s, n = 4, 100k rows) = 0.616**; uniform s → 0.250.
+  - Eval pass: N = 2689 rows at H=192 (released loader 2688); prefix reproduces drop_last pass exactly (diff 0);
+    per-window mean == utils.metrics MSE/MAE (diff ~1e-7).
+  - Instrumentation on vs off (2 epochs, TFPS and both baselines): checkpoint state_dict + torch/numpy RNG bitwise equal
+    (val losses compared only on instrumented runs). EarlyStopping record, val-hook RNG replay (val loss + val MSE to
+    1e-6), pure-val-MSE checkpoint, pre-FREEZE cleanup: PASS.
+  - Baselines: released-loader score == repo's printed test MSE (diff 1.1e-7 PatchTST, 4.1e-8 DLinear; only the diff
+    was recorded/seen).
+  - **Resume (P7, `resumable_train`):** each tool call is capped at 10 min, so a full TFPS run (~27 min) cannot run
+    in one foreground call → per-epoch resumable state was added (PREREG §8 provision). Tests: resumable train() ==
+    released train() bitwise (4 epochs: checkpoints, val losses, RNG); run interrupted after EVERY epoch (4 processes)
+    == uninterrupted, bitwise. Every pre-FREEZE run used resumable or released train at seed 999.
+- Timing (seed 999, filtered; only val numbers seen): TFPS ≈ 16 s/epoch at H=192 and ≈ 17 s/epoch at H=336 incl. val +
+  test passes; PatchTST ≈ 7 s/epoch, DLinear < 1 s/epoch (H=192). **tfps_gauss H=192 ran all 100 epochs** (released
+  criterion best at epoch 100; val loss 5.80 → 3.28, aux share of val loss ≈ 0.67 throughout; mean column norm of D
+  10.6 → 8.1; val MSE minimum ≈ epoch 11) — as PREREG §5 predicted for arm 1. ~27 min per arm-1 run.
+- Q1 (bare EDESC construction in 10 fresh processes, outside the training pipeline): 5 of 12544 entries non-finite
+  every time. Not the PREREG Q1 measurement (which is in the released run context, earlier 4586-4635); Q1 proper
+  still to do.
+- No H = 192 / 336 test number was seen. Test lines dropped by the filter; no test pass run in TFPS pre-FREEZE mode.
+- Patch sha256 (12): rc_tfps af7746404ad4, rc_patchtst 963d25b03b89, extension_trigger a63941f9b45c (rc_tfps:
+  one comment line changed after the train/resume tests; fast tests re-run after it, 20/20).
+
+## Patches in force (none used for scoring yet)
+- P1 `layers/Cluster.py:30` EDESC.__init__ D init; P2 `layers/SparseMoE.py:57-66` router eval-only noise switch +
+  recording; P3 `utils/tools.py:40-69` (via `exp/exp_main.py:4,152`) EarlyStopping subclass; P4 `exp/exp_main.py:73-135`
+  vali hook (val loader only); P5 `exp/exp_main.py:50-52` _get_data remembers val loader; P6 `exp/exp_main.py:277-397`
+  test → audit scoring pass; P7 `exp/exp_main.py:137-275` train → resumable_train (bitwise-tested equal).
+  Baselines: B1 EarlyStopping subclass, B2 test → scoring pass (official repo). num_workers 0 via argv for all.
+
+## Next (step c, part 2)
+1. Per-epoch "mean row range of s per router (val pass)" (PREREG §6) is not yet logged; add + self-test.
+2. Battery driver: per-run dirs `runs/<arm>/<H>/seed<k>/` with provenance.json, metrics.json (repo vs recomputed),
+   per_window_mse.npy, draws, routing summaries (A, H_r), nonoise and valmse scores; segment-resumable.
+3. Q1 proper (10 fresh processes, released pipeline, D non-finite count).
+4. Epochs-to-stop for tfps_gauss_unit / tfps_zero at H=192 and H=336 (seed 999), then the budget line.
+5. Then step (d) FREEZE — still needs the PDF check in PAPER_EXTRACT.md.

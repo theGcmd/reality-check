@@ -1,0 +1,112 @@
+{
+ "lens": "answer_built_in",
+ "model": "fable",
+ "round": 3,
+ "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+ "verdict": "LICENSED_WITH_FIXES",
+ "method_note": "Read only: PREREG.md r3, PAPER_EXTRACT.md, _design_review_r2.json, _r2/answer_built_in.json, and the released code (tfps layers/Cluster.py, layers/Constraint.py, layers/SparseMoE.py, exp/exp_main.py, utils/tools.py, scripts/etth1.sh; patchtst_official scripts/PatchTST/etth1.sh, scripts/Linear/etth1.sh). Nothing was run. Numbers marked 'derived' are hand estimates, not measurements.",
+ "r2_issues_status": [
+  {
+   "issue": "BLOCKING r2: D ~ N(0,1) puts ~4.4 of constraint loss into the early-stopping criterion for the gauss arm only, and Q2/Q3 rested on that audit-chosen scale; pure-val-MSE re-selection was non-gating",
+   "fixed": "yes",
+   "note": "Resolved for negative verdicts, which was the blocking part. Arm 2 tfps_gauss_unit (N(0,1/112), PREREG §5) has aux ~0.02 of val MSE, so its selection is not distorted; the horizon rule (§7, owner decision 9) lets REVERSED/VANISHES/SHRINKS stand only if all three TFPS arms are at least that negative, so the distorted arm 1 can no longer produce a negative label alone; qualifier (ii) re-computes a negative label under pure-val-MSE selection; Q2 is stated per scale with a SELECTION-SENSITIVE suffix; the per-epoch log (§6) shows what drove selection. Code basis re-read: val loss = MSE + alpha*aux_time + gama*aux_freq (exp/exp_main.py:130), EarlyStopping saves on any decrease (utils/tools.py:50-63), constraints at layers/Constraint.py:14-17, 30-39. Residual, non-blocking: arm 1 can still turn a would-be unanimous non-negative label into DEPENDS ON D INIT without a selection suffix (new issue 1)."
+  },
+  {
+   "issue": "Label suffix said 'released code' and omitted the baselines; Q2 labels named 'INIT MATTERS'",
+   "fixed": "yes",
+   "note": "Suffix now reads 'released TFPS code with audit-supplied D init (<arm>), vs PatchTST and DLinear rerun at L=96 in the official PatchTST code (baselines lr-searched per seed, TFPS not), CPU'. Q2 labels are GAUSS(<sd>) BETTER THAN ZERO / ZERO BETTER / EQUIVALENT / INCONCLUSIVE. H=720 has a reason in §9. For the Q3 horizon label '<arm>' is undefined (minor issue 6)."
+  },
+  {
+   "issue": "Routing qualifier and noise-off arm close to decided by the code and readable as 'pattern routing does not work'",
+   "fixed": "yes",
+   "note": "Qualifier renamed ROUTER NOISE EXCEEDS AFFINITY SPREAD, printed per router with A, the simulated one-hot ceiling and the row range of s; §7 says the 0.30 cut is expected to fire; §9 says training with noise-free routing is not tested and NOISE-OFF labels concern evaluation only. Router code unchanged from what I read in r2 (layers/SparseMoE.py:57-66)."
+  },
+  {
+   "issue": "lr asymmetry: baselines best-of-4 per seed, TFPS one released lr",
+   "fixed": "yes",
+   "note": "Owner decision 11 and qualifier (i): a negative horizon label is recomputed with PatchTST at lr 1e-4 and DLinear at lr 5e-3 and gets 'ONLY WITH PER-SEED LR SEARCH FOR BASELINES' if it does not hold. Both lrs are in the grid and match the official scripts (scripts/PatchTST/etth1.sh last line: --learning_rate 0.0001; scripts/Linear/etth1.sh: --learning_rate 0.005). The asymmetry is in every label suffix. 'Does not hold' needs a definition (minor issue 5)."
+  },
+  {
+   "issue": "D draw ambiguous (identical time/freq D, or broken pairing between arms)",
+   "fixed": "yes",
+   "note": "Dedicated torch.Generator (30000+seed time, 40000+seed freq), global RNG untouched, self-tests for bitwise-equal non-D parameters and equal global RNG state across arms (§5, §8). Arms 1 and 2 share the same G, which isolates scale."
+  },
+  {
+   "issue": "TFPS test MSE depended on one eval-noise draw",
+   "fixed": "yes",
+   "note": "K = 5 seeded draws, per-run score = mean over draws, fixed before scoring; spread reported and flagged above m_H/4. This is unbiased for the expected single-draw MSE provided it is the mean of five MSEs, not the MSE of an averaged forecast (minor issue 7)."
+  },
+  {
+   "issue": "No check that the gauss arm is the intended manipulation",
+   "fixed": "yes",
+   "note": "Per-run ||D_final - D_init||/||D_init||, column norms, aux share at the saved epoch, per-epoch aux components (§6). Descriptive, as asked."
+  },
+  {
+   "issue": "Paper quotes unverified against the PDF",
+   "fixed": "partly",
+   "note": "PAPER_EXTRACT.md now holds the Alg. 1 wording (no scale stated, no k-means/SVD) and Table 1. The extract itself says the Table 1 cells were reconstructed from a garbled layout. The FREEZE check covers the eight cells, but §'Paper text status' still allows FREEZE without it (major issue 3)."
+  },
+  {
+   "issue": "r1 carry-over: anchor on one arm; Q3 judged on tfps_gauss alone while tfps_zero may be closest to what the authors ran",
+   "fixed": "yes",
+   "note": "Q3 is computed for all three TFPS arms and each is anchored (§7)."
+  }
+ ],
+ "issues": [
+  {
+   "severity": "major",
+   "issue": "The SELECTION-SENSITIVE and published-lr qualifiers attach only to negative horizon labels. The N(0,1) arm's distorted checkpoint selection can still change the horizon label in the other direction with no suffix: if tfps_gauss_unit and tfps_zero are SURVIVES and tfps_gauss is VANISHES only because its checkpoint is chosen by constraint decay, the horizon label is DEPENDS ON D INIT, with nothing in the label saying the split disappears under pure-val-MSE selection. The same holds for SURVIVES and INCONCLUSIVE labels, which are never recomputed.",
+   "evidence": "PREREG §7 'Qualifiers on a negative horizon label (REVERSED / VANISHES / SHRINKS)'. §2 and §5 state in advance that under arm 1 the aux term is ~10x val MSE and likely drives selection (exp/exp_main.py:130, :257-262; utils/tools.py:50-63). Derived: at H=336 (lr 5e-3, type3 decay, utils/tools.py:18-19) the aux term keeps falling by more than val-MSE noise for most of 100 epochs, so arm 1 is in effect 'train to the end, keep the last epoch'.",
+   "fix": "In §7 change 'Qualifiers on a negative horizon label' to 'Qualifiers on every horizon label, including DEPENDS ON D INIT, SURVIVES and INCONCLUSIVE'. Rule (ii): recompute the full three-arm horizon label with pure-val-MSE selection for the TFPS arms; if it is not the identical label string, append '— SELECTION-SENSITIVE (pure-val-MSE: …)'. Rule (i) the same way with 'differs' (see issue 5)."
+  },
+  {
+   "severity": "major",
+   "issue": "The headline DEPENDS ON D INIT covers two opposite outcomes. (gauss: SURVIVES, unit: SURVIVES, zero: VANISHES) is the pattern the paper's mechanism predicts: the gain is there with the described Gaussian D at both scales and absent with affinity-blind routing. (gauss: VANISHES, unit: VANISHES, zero: SURVIVES) is the opposite. Both get the same headline, which reads as a hedge against the paper in the first case and hides a two-scale failure of the described init in the second. SURVIVES as a bare horizon label also requires the control arm to survive, which is not what the paper claims.",
+   "evidence": "PREREG §7 Horizon label: 'if all three per-arm labels are equal → that label … Otherwise → DEPENDS ON D INIT (gauss: …, unit: …, zero: …)'. §5 defines tfps_zero as a control (uniformly random expert), not a TFPS configuration the paper describes.",
+   "fix": "Keep the rule and owner decision 9 as they are (no bare negative label unless all three arms agree). Add to §7: (a) the per-arm triple is part of the label and is never dropped or shortened; (b) when the two Gaussian arms share a label X and tfps_zero has Y ≠ X, the label is printed as 'DEPENDS ON D INIT — <X> AT BOTH GAUSSIAN SCALES, <Y> WITH D = 0 (affinity-blind control)'; (c) one fixed sentence in the report template: 'Gaussian arms SURVIVE and the D = 0 control does not is the pattern the paper's mechanism predicts; the reverse is not.'"
+  },
+  {
+   "severity": "major",
+   "issue": "Margin-dependent labels may be issued on unverified margins. The fallback lets FREEZE go ahead without the PDF check, with a suffix. The margins are 0.011 to 0.037 and decide VANISHES vs INCONCLUSIVE, SHRINKS vs SURVIVES, and whether a baseline gates at all (m ≤ 0 makes it non-gating). The extract says its Table 1 cells were reconstructed and that an r2 lens recalled DLinear ≈ 0.481 at H=336, which would make m_{336,DLinear} negative.",
+   "evidence": "PREREG lines 13-17 ('If the check cannot be done, every Q3 label carries \"margins per unverified extract\"'); PAPER_EXTRACT.md 'Reliability' paragraph and the note under Table 1. Q2's m_336 = 0.005 rests on the FITS cell 0.489 in the same table.",
+   "fix": "Replace the fallback sentence with: 'If the check cannot be done, Q3 rules 2-4 and Q2 rule 3 and the \", smaller than m_H\" sub-labels are not applied; Q3 reports only REVERSED (U < 0 for some B), GAIN DETECTED OVER BOTH (L > 0 for both B) or INCONCLUSIVE, and Q2 only rules 0, 1, 2, 4.' Also add to the FREEZE check: record whether the PDF reconciles 'input lengths searched' (appendix) with 'L = 96' (Table 1 caption); if the TFPS column used a searched L, add 'paper's TFPS column may use L ≠ 96' to every Q3 label."
+  },
+  {
+   "severity": "minor",
+   "issue": "VANISHES reads as 'gain is zero'; the rule shows 'gain not detected and claimed margin excluded'. The prereg's own Monte Carlo gives VANISHES 35-52% of the time when the true gain is half the claim.",
+   "evidence": "PREREG §7 rule 2 and the Monte Carlo bullet under Reachability.",
+   "fix": "Print the rule's gloss with the label every time: 'VANISHES (gain over <B> not detected; claimed margin <m> excluded)' and likewise 'SHRINKS (gain detected; claimed margin over <B> excluded)'."
+  },
+  {
+   "severity": "minor",
+   "issue": "Qualifier (i) says 'if it does not hold there' without defining it. The published-lr label could also come out more negative.",
+   "evidence": "PREREG §7 qualifier (i).",
+   "fix": "Define: 'if the published-lr horizon label is not the identical label, append the suffix with that label'. When the published-lr label is more negative, use the wording '— PUBLISHED-LR LABEL: …' instead of 'ONLY WITH PER-SEED LR SEARCH'."
+  },
+  {
+   "severity": "minor",
+   "issue": "The label suffix has '(<arm>)', which is undefined for the Q3 horizon label that combines three arms.",
+   "evidence": "PREREG §7 'Label suffix (every label)'.",
+   "fix": "For Q3 horizon and item labels use 'audit-supplied D init (three inits: N(0,1), N(0,1/112), 0)'."
+  },
+  {
+   "severity": "minor",
+   "issue": "Eval-noise averaging is fair only as a mean of scores. An average of the five forecasts would be an ensemble and would favour TFPS. The anchor's single-run prediction interval is built from 5-draw means, so it is slightly narrower than a single noisy run like the paper's.",
+   "evidence": "PREREG §6 'Per-run TFPS score = mean over the 5 draws'; §7 Anchor.",
+   "fix": "Add to §6: 'the mean of the five per-draw MSEs; forecasts are never averaged across draws'. In the anchor, add the mean within-run draw variance to s² for TFPS arms (anchor is non-gating, so this is wording plus one line of arithmetic)."
+  },
+  {
+   "severity": "minor",
+   "issue": "Q2 for tfps_gauss_unit is close to decided by the code: at init its s is nearly uniform (row range ≈ 0.02, A ≈ 0.26 per §5), so its routing starts almost identical to the D = 0 control, and the router noise (sd ≥ softplus(0) = 0.69, layers/SparseMoE.py:59) is far larger than that spread. EQUIVALENT or INCONCLUSIVE is the expected outcome unless training grows D. The prereg says this in advance, which is enough for the rule; the label still needs to carry it when the routing suffix does not fire.",
+   "evidence": "PREREG §5 'Expected consequence, stated in advance'; layers/Cluster.py:63-69 (eta·d = 140 added before normalisation).",
+   "fix": "Always print A, the ceiling and the mean row range of s next to each Q2 label (not only when A < 0.30), and state in the report that Q2 is about D's initialisation under the released router, not about pattern routing."
+  },
+  {
+   "severity": "minor",
+   "issue": "Budget text assumes 30-60 epochs for all TFPS arms. Arm 1 will probably run close to 100 epochs because its val loss keeps falling with the constraint term, so early stopping rarely triggers.",
+   "evidence": "PREREG §8 budget; derived from exp/exp_main.py:130, 262 and utils/tools.py:18-19, 50-63.",
+   "fix": "State arm 1's expected length as up to 100 epochs in the budget; step (c) already measures it. No design change."
+  }
+ ],
+ "summary": "The r2 blocker is resolved: with tfps_gauss_unit, the all-three-arms rule and the pure-val-MSE recompute, the audit's N(0,1) scale can no longer produce a negative Q3 label by itself. lr asymmetry, RNG pairing, eval-noise averaging and label scope are fixed. Three mechanical fixes remain before FREEZE: apply the selection and published-lr suffixes to every horizon label, not only negative ones; make DEPENDS ON D INIT say which way the split goes (Gaussian arms vs D = 0 control); and do not apply margin-dependent rules if the Table 1 cells are not checked against the PDF. No remaining issue makes a verdict wrong by construction."
+}

@@ -1,0 +1,799 @@
+{
+ "item": "TFPS-1",
+ "step": "(b) prereg rewrite r3 + design review round 3 (last allowed)",
+ "date_utc": "2026-11-27",
+ "prereg_reviewed": "audits/tfps/PREREG.md at commit bc7055d (r3 draft, not frozen)",
+ "round_verdict": "LICENSED_WITH_FIXES: all 5 lenses LICENSED_WITH_FIXES, 0 blocking issues; foregone lens: no verdict guaranteed or unreachable by construction",
+ "note": "Full lens outputs in audits/tfps/_r3/*.json (unedited). Fixes must be applied mechanically before FREEZE; no further review round. FREEZE precondition: Table 1 check against the PDF (headers + full H=192/336 rows, per fairness lens).",
+ "lens_verdicts": {
+  "answer_built_in": "LICENSED_WITH_FIXES",
+  "fairness": "LICENSED_WITH_FIXES",
+  "foregone": "LICENSED_WITH_FIXES",
+  "leakage": "LICENSED_WITH_FIXES",
+  "statistics": "LICENSED_WITH_FIXES"
+ },
+ "fixes_before_freeze": [
+  "Rename DEPENDS ON D INIT to a neutral 'NOT CONSISTENT ACROSS TFPS ARMS (gauss: ..., unit: ..., zero: ...)'; it fires 9-80% under identical arms (foregone, statistics); say which way the split goes (Fable); note when both Q2 contrasts are EQUIVALENT/INCONCLUSIVE; when only zero differs, state the result holds under both Gaussian scales (fairness). Owner decision 9 logic unchanged.",
+  "Horizon rule: handle a BLOCKED arm explicitly (statistics).",
+  "Apply SELECTION-SENSITIVE and published-lr qualifiers to every Q3 horizon label, not only negatives; define 'does not hold' (label differs in base label), failed published-lr run rule (Fable, leakage, statistics).",
+  "Define rules when a checked m_{H,B} <= 0: baseline non-gating, excluded from REVERSED/VANISHES/Bonferroni count and the trigger; Q2 m_H fallback (fairness, statistics).",
+  "Drop the 'margins per unverified extract' fallback: without the PDF check, margin-dependent rules are not applied (Fable); widen the FREEZE check to column headers and full H=192/336 MSE rows (fairness).",
+  "Resolve or qualify the paper's input-length-search sentence vs Table 1 L=96 for negative Q3 labels and TFPS anchor (fairness).",
+  "Eval-noise seeds collide with D generator seeds (10000k+seed for k=3,4 == 30000/40000+seed): move D seeds e.g. to 900000+seed / 910000+seed (leakage, probe).",
+  "Step (c) timing runs must use a seed outside S and extension seeds, with test-metric lines filtered; disclose feas_*.log H=96 exposure (leakage).",
+  "Correct \u00a75 unit-arm init numbers: A 0.2516/0.2505, mean s row range 0.005/0.008; state unit affinity = N(0,1) affinity with z shrunk by sqrt(112); log s row range per epoch (foregone).",
+  "\u00a77 reachability: Q2 ', smaller than m_H' floor sigma < m_H/2.352 (0.0047/0.0021 at n=5; 0.0071/0.0032 at n=10); NOISE-OFF EQUIVALENT paired floor sd_diff < 0.0115/0.0052; n=4 widths (df 6.57, hw_L 1.284, hw_U 1.608); replace r2 Monte Carlo sentence with r3 figures (statistics).",
+  "Extension trigger: state selection (released), table (lr-searched), BLOCKED/non-gating exclusions, zero-SE df handling; Q2b n after extension (statistics, foregone).",
+  "Item-level 'same label' compares base labels only (foregone). Failed-run suffix for k failures (statistics).",
+  "Minor: VANISHES/SHRINKS glosses; define <arm> in suffix; eval-noise score is mean of per-draw MSEs; routing measurement draw specified; A and ceiling always printed beside Q2; arm-1 budget up to 100 epochs; pure-val-MSE checkpoint candidate set and tie rule; hooks-leave-training-bitwise-unchanged self-test; xavier_normal_ note for N(0,1/112); 'no k-means/SVD sentence found in the extract' + KMeans imported unused (exp_main.py:12); DLinear from PatchTST repo copy; baseline val_loss_min is float32."
+ ],
+ "lenses": [
+  {
+   "lens": "answer_built_in",
+   "model": "fable",
+   "round": 3,
+   "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+   "verdict": "LICENSED_WITH_FIXES",
+   "method_note": "Read only: PREREG.md r3, PAPER_EXTRACT.md, _design_review_r2.json, _r2/answer_built_in.json, and the released code (tfps layers/Cluster.py, layers/Constraint.py, layers/SparseMoE.py, exp/exp_main.py, utils/tools.py, scripts/etth1.sh; patchtst_official scripts/PatchTST/etth1.sh, scripts/Linear/etth1.sh). Nothing was run. Numbers marked 'derived' are hand estimates, not measurements.",
+   "r2_issues_status": [
+    {
+     "issue": "BLOCKING r2: D ~ N(0,1) puts ~4.4 of constraint loss into the early-stopping criterion for the gauss arm only, and Q2/Q3 rested on that audit-chosen scale; pure-val-MSE re-selection was non-gating",
+     "fixed": "yes",
+     "note": "Resolved for negative verdicts, which was the blocking part. Arm 2 tfps_gauss_unit (N(0,1/112), PREREG \u00a75) has aux ~0.02 of val MSE, so its selection is not distorted; the horizon rule (\u00a77, owner decision 9) lets REVERSED/VANISHES/SHRINKS stand only if all three TFPS arms are at least that negative, so the distorted arm 1 can no longer produce a negative label alone; qualifier (ii) re-computes a negative label under pure-val-MSE selection; Q2 is stated per scale with a SELECTION-SENSITIVE suffix; the per-epoch log (\u00a76) shows what drove selection. Code basis re-read: val loss = MSE + alpha*aux_time + gama*aux_freq (exp/exp_main.py:130), EarlyStopping saves on any decrease (utils/tools.py:50-63), constraints at layers/Constraint.py:14-17, 30-39. Residual, non-blocking: arm 1 can still turn a would-be unanimous non-negative label into DEPENDS ON D INIT without a selection suffix (new issue 1)."
+    },
+    {
+     "issue": "Label suffix said 'released code' and omitted the baselines; Q2 labels named 'INIT MATTERS'",
+     "fixed": "yes",
+     "note": "Suffix now reads 'released TFPS code with audit-supplied D init (<arm>), vs PatchTST and DLinear rerun at L=96 in the official PatchTST code (baselines lr-searched per seed, TFPS not), CPU'. Q2 labels are GAUSS(<sd>) BETTER THAN ZERO / ZERO BETTER / EQUIVALENT / INCONCLUSIVE. H=720 has a reason in \u00a79. For the Q3 horizon label '<arm>' is undefined (minor issue 6)."
+    },
+    {
+     "issue": "Routing qualifier and noise-off arm close to decided by the code and readable as 'pattern routing does not work'",
+     "fixed": "yes",
+     "note": "Qualifier renamed ROUTER NOISE EXCEEDS AFFINITY SPREAD, printed per router with A, the simulated one-hot ceiling and the row range of s; \u00a77 says the 0.30 cut is expected to fire; \u00a79 says training with noise-free routing is not tested and NOISE-OFF labels concern evaluation only. Router code unchanged from what I read in r2 (layers/SparseMoE.py:57-66)."
+    },
+    {
+     "issue": "lr asymmetry: baselines best-of-4 per seed, TFPS one released lr",
+     "fixed": "yes",
+     "note": "Owner decision 11 and qualifier (i): a negative horizon label is recomputed with PatchTST at lr 1e-4 and DLinear at lr 5e-3 and gets 'ONLY WITH PER-SEED LR SEARCH FOR BASELINES' if it does not hold. Both lrs are in the grid and match the official scripts (scripts/PatchTST/etth1.sh last line: --learning_rate 0.0001; scripts/Linear/etth1.sh: --learning_rate 0.005). The asymmetry is in every label suffix. 'Does not hold' needs a definition (minor issue 5)."
+    },
+    {
+     "issue": "D draw ambiguous (identical time/freq D, or broken pairing between arms)",
+     "fixed": "yes",
+     "note": "Dedicated torch.Generator (30000+seed time, 40000+seed freq), global RNG untouched, self-tests for bitwise-equal non-D parameters and equal global RNG state across arms (\u00a75, \u00a78). Arms 1 and 2 share the same G, which isolates scale."
+    },
+    {
+     "issue": "TFPS test MSE depended on one eval-noise draw",
+     "fixed": "yes",
+     "note": "K = 5 seeded draws, per-run score = mean over draws, fixed before scoring; spread reported and flagged above m_H/4. This is unbiased for the expected single-draw MSE provided it is the mean of five MSEs, not the MSE of an averaged forecast (minor issue 7)."
+    },
+    {
+     "issue": "No check that the gauss arm is the intended manipulation",
+     "fixed": "yes",
+     "note": "Per-run ||D_final - D_init||/||D_init||, column norms, aux share at the saved epoch, per-epoch aux components (\u00a76). Descriptive, as asked."
+    },
+    {
+     "issue": "Paper quotes unverified against the PDF",
+     "fixed": "partly",
+     "note": "PAPER_EXTRACT.md now holds the Alg. 1 wording (no scale stated, no k-means/SVD) and Table 1. The extract itself says the Table 1 cells were reconstructed from a garbled layout. The FREEZE check covers the eight cells, but \u00a7'Paper text status' still allows FREEZE without it (major issue 3)."
+    },
+    {
+     "issue": "r1 carry-over: anchor on one arm; Q3 judged on tfps_gauss alone while tfps_zero may be closest to what the authors ran",
+     "fixed": "yes",
+     "note": "Q3 is computed for all three TFPS arms and each is anchored (\u00a77)."
+    }
+   ],
+   "issues": [
+    {
+     "severity": "major",
+     "issue": "The SELECTION-SENSITIVE and published-lr qualifiers attach only to negative horizon labels. The N(0,1) arm's distorted checkpoint selection can still change the horizon label in the other direction with no suffix: if tfps_gauss_unit and tfps_zero are SURVIVES and tfps_gauss is VANISHES only because its checkpoint is chosen by constraint decay, the horizon label is DEPENDS ON D INIT, with nothing in the label saying the split disappears under pure-val-MSE selection. The same holds for SURVIVES and INCONCLUSIVE labels, which are never recomputed.",
+     "evidence": "PREREG \u00a77 'Qualifiers on a negative horizon label (REVERSED / VANISHES / SHRINKS)'. \u00a72 and \u00a75 state in advance that under arm 1 the aux term is ~10x val MSE and likely drives selection (exp/exp_main.py:130, :257-262; utils/tools.py:50-63). Derived: at H=336 (lr 5e-3, type3 decay, utils/tools.py:18-19) the aux term keeps falling by more than val-MSE noise for most of 100 epochs, so arm 1 is in effect 'train to the end, keep the last epoch'.",
+     "fix": "In \u00a77 change 'Qualifiers on a negative horizon label' to 'Qualifiers on every horizon label, including DEPENDS ON D INIT, SURVIVES and INCONCLUSIVE'. Rule (ii): recompute the full three-arm horizon label with pure-val-MSE selection for the TFPS arms; if it is not the identical label string, append '\u2014 SELECTION-SENSITIVE (pure-val-MSE: \u2026)'. Rule (i) the same way with 'differs' (see issue 5)."
+    },
+    {
+     "severity": "major",
+     "issue": "The headline DEPENDS ON D INIT covers two opposite outcomes. (gauss: SURVIVES, unit: SURVIVES, zero: VANISHES) is the pattern the paper's mechanism predicts: the gain is there with the described Gaussian D at both scales and absent with affinity-blind routing. (gauss: VANISHES, unit: VANISHES, zero: SURVIVES) is the opposite. Both get the same headline, which reads as a hedge against the paper in the first case and hides a two-scale failure of the described init in the second. SURVIVES as a bare horizon label also requires the control arm to survive, which is not what the paper claims.",
+     "evidence": "PREREG \u00a77 Horizon label: 'if all three per-arm labels are equal \u2192 that label \u2026 Otherwise \u2192 DEPENDS ON D INIT (gauss: \u2026, unit: \u2026, zero: \u2026)'. \u00a75 defines tfps_zero as a control (uniformly random expert), not a TFPS configuration the paper describes.",
+     "fix": "Keep the rule and owner decision 9 as they are (no bare negative label unless all three arms agree). Add to \u00a77: (a) the per-arm triple is part of the label and is never dropped or shortened; (b) when the two Gaussian arms share a label X and tfps_zero has Y \u2260 X, the label is printed as 'DEPENDS ON D INIT \u2014 <X> AT BOTH GAUSSIAN SCALES, <Y> WITH D = 0 (affinity-blind control)'; (c) one fixed sentence in the report template: 'Gaussian arms SURVIVE and the D = 0 control does not is the pattern the paper's mechanism predicts; the reverse is not.'"
+    },
+    {
+     "severity": "major",
+     "issue": "Margin-dependent labels may be issued on unverified margins. The fallback lets FREEZE go ahead without the PDF check, with a suffix. The margins are 0.011 to 0.037 and decide VANISHES vs INCONCLUSIVE, SHRINKS vs SURVIVES, and whether a baseline gates at all (m \u2264 0 makes it non-gating). The extract says its Table 1 cells were reconstructed and that an r2 lens recalled DLinear \u2248 0.481 at H=336, which would make m_{336,DLinear} negative.",
+     "evidence": "PREREG lines 13-17 ('If the check cannot be done, every Q3 label carries \"margins per unverified extract\"'); PAPER_EXTRACT.md 'Reliability' paragraph and the note under Table 1. Q2's m_336 = 0.005 rests on the FITS cell 0.489 in the same table.",
+     "fix": "Replace the fallback sentence with: 'If the check cannot be done, Q3 rules 2-4 and Q2 rule 3 and the \", smaller than m_H\" sub-labels are not applied; Q3 reports only REVERSED (U < 0 for some B), GAIN DETECTED OVER BOTH (L > 0 for both B) or INCONCLUSIVE, and Q2 only rules 0, 1, 2, 4.' Also add to the FREEZE check: record whether the PDF reconciles 'input lengths searched' (appendix) with 'L = 96' (Table 1 caption); if the TFPS column used a searched L, add 'paper's TFPS column may use L \u2260 96' to every Q3 label."
+    },
+    {
+     "severity": "minor",
+     "issue": "VANISHES reads as 'gain is zero'; the rule shows 'gain not detected and claimed margin excluded'. The prereg's own Monte Carlo gives VANISHES 35-52% of the time when the true gain is half the claim.",
+     "evidence": "PREREG \u00a77 rule 2 and the Monte Carlo bullet under Reachability.",
+     "fix": "Print the rule's gloss with the label every time: 'VANISHES (gain over <B> not detected; claimed margin <m> excluded)' and likewise 'SHRINKS (gain detected; claimed margin over <B> excluded)'."
+    },
+    {
+     "severity": "minor",
+     "issue": "Qualifier (i) says 'if it does not hold there' without defining it. The published-lr label could also come out more negative.",
+     "evidence": "PREREG \u00a77 qualifier (i).",
+     "fix": "Define: 'if the published-lr horizon label is not the identical label, append the suffix with that label'. When the published-lr label is more negative, use the wording '\u2014 PUBLISHED-LR LABEL: \u2026' instead of 'ONLY WITH PER-SEED LR SEARCH'."
+    },
+    {
+     "severity": "minor",
+     "issue": "The label suffix has '(<arm>)', which is undefined for the Q3 horizon label that combines three arms.",
+     "evidence": "PREREG \u00a77 'Label suffix (every label)'.",
+     "fix": "For Q3 horizon and item labels use 'audit-supplied D init (three inits: N(0,1), N(0,1/112), 0)'."
+    },
+    {
+     "severity": "minor",
+     "issue": "Eval-noise averaging is fair only as a mean of scores. An average of the five forecasts would be an ensemble and would favour TFPS. The anchor's single-run prediction interval is built from 5-draw means, so it is slightly narrower than a single noisy run like the paper's.",
+     "evidence": "PREREG \u00a76 'Per-run TFPS score = mean over the 5 draws'; \u00a77 Anchor.",
+     "fix": "Add to \u00a76: 'the mean of the five per-draw MSEs; forecasts are never averaged across draws'. In the anchor, add the mean within-run draw variance to s\u00b2 for TFPS arms (anchor is non-gating, so this is wording plus one line of arithmetic)."
+    },
+    {
+     "severity": "minor",
+     "issue": "Q2 for tfps_gauss_unit is close to decided by the code: at init its s is nearly uniform (row range \u2248 0.02, A \u2248 0.26 per \u00a75), so its routing starts almost identical to the D = 0 control, and the router noise (sd \u2265 softplus(0) = 0.69, layers/SparseMoE.py:59) is far larger than that spread. EQUIVALENT or INCONCLUSIVE is the expected outcome unless training grows D. The prereg says this in advance, which is enough for the rule; the label still needs to carry it when the routing suffix does not fire.",
+     "evidence": "PREREG \u00a75 'Expected consequence, stated in advance'; layers/Cluster.py:63-69 (eta\u00b7d = 140 added before normalisation).",
+     "fix": "Always print A, the ceiling and the mean row range of s next to each Q2 label (not only when A < 0.30), and state in the report that Q2 is about D's initialisation under the released router, not about pattern routing."
+    },
+    {
+     "severity": "minor",
+     "issue": "Budget text assumes 30-60 epochs for all TFPS arms. Arm 1 will probably run close to 100 epochs because its val loss keeps falling with the constraint term, so early stopping rarely triggers.",
+     "evidence": "PREREG \u00a78 budget; derived from exp/exp_main.py:130, 262 and utils/tools.py:18-19, 50-63.",
+     "fix": "State arm 1's expected length as up to 100 epochs in the budget; step (c) already measures it. No design change."
+    }
+   ],
+   "summary": "The r2 blocker is resolved: with tfps_gauss_unit, the all-three-arms rule and the pure-val-MSE recompute, the audit's N(0,1) scale can no longer produce a negative Q3 label by itself. lr asymmetry, RNG pairing, eval-noise averaging and label scope are fixed. Three mechanical fixes remain before FREEZE: apply the selection and published-lr suffixes to every horizon label, not only negative ones; make DEPENDS ON D INIT say which way the split goes (Gaussian arms vs D = 0 control); and do not apply margin-dependent rules if the Table 1 cells are not checked against the PDF. No remaining issue makes a verdict wrong by construction."
+  },
+  {
+   "lens": "fairness",
+   "model": "this session's model",
+   "round": 3,
+   "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+   "verdict": "LICENSED_WITH_FIXES",
+   "method_note": "Code reading plus sha256/grep only; nothing trained or run. Checked against PAPER_EXTRACT.md, the r2 fairness lens in _design_review_r2.json, work/repos/tfps @ 83a11827e27e and work/repos/patchtst_official @ 204c21efe0b3 (PatchTST_supervised/).",
+   "checks_passed": [
+    "Quotes in PREREG \u00a71 match PAPER_EXTRACT.md word for word: 'random Gaussian distribution-initialized subspace', 'The input lengths are L = 104 for ILI and L = 96 for others.', 'The best parameters are selected based on the lowest validation loss.', 'We rerun all the experiments with codes provided by their official implementation.' Items still unverified against the PDF are marked [E], and the extract's reliability caveat is carried over.",
+    "Margins recomputed from the extract's Table 1: m_{192,PatchTST} = 0.460-0.423 = 0.037; m_{192,DLinear} = 0.434-0.423 = 0.011; m_{336,PatchTST} = 0.497-0.484 = 0.013; m_{336,DLinear} = 0.499-0.484 = 0.015. Best of the 8 baselines: 0.434 (DLinear) at H=192, 0.489 (FITS) at H=336, so m_192 = 0.011 and m_336 = 0.005. All correct.",
+    "Both D scales are defensible readings of 'random Gaussian distribution-initialized'. Neither is claimed to be the paper's (\u00a75). N(0,1) is the torch.randn / nn.init.normal_ default. N(0,1/112) gives unit-norm columns, which is what D_constraint1 pulls towards (Constraint.py:14-17) and the scale of Initialization_D (InitializeD.py:50-67, SVD u columns). It is also exactly torch xavier_normal_ for a 112x112 matrix (std = sqrt(2/224)); the prereg does not mention this, and it adds support.",
+    "\u00a72 citations re-verified: Cluster.py:27 (commented EDESC line), :28-30 (n_z = c_out*d_model = 112, d = 28, uninitialised Parameter), :61-69 (affinity, eta*d, row normalise, 'Eq 13'), :72-88 (beta*KL + d1 + d2); Constraint.py:14-17 and :30-39; exp_main.py:24 import of Initialization_D (no call anywhere; grep finds no other write to D); exp_main.py:55 (Adam, no weight decay), :130 (val loss = MSE + alpha*aux_t + gama*aux_f), :139 (val loader), :152 (EarlyStopping), :160-164 (OneCycleLR), :257-262, :282 (./checkpoints/ hard-coded), :361-365 (np.array stacks); run_longExp.py :45-51, :84, :86-87, :90, :91, :94, :98, :132, :134; SparseMoE.py:16 (dropout 0.1), :57-66 (noise at train and eval, no self.training guard), :59-60 (noise lines); time backbone :77 reshape vs :81/:85 permutes, frequency :79 vs :83/:87; data_factory.py:17-20 (test drop_last True, batch = args.batch_size), :29-31 (train/val shuffle + drop_last); utils/tools.py:18-19 (type3).",
+    "\u00a75 configs re-verified: tfps scripts/etth1.sh H=192 :75-89 (seq 96, lr 0.0005, 4/1/4/1), H=336 :131-145 (seq 96, lr 0.005, 4/1/4/1), common args :100-120 / :156-176 (batch 128, itr 1, epochs 100, beta 0.1, --gpu 7); seq_len 96 in all four blocks (:19, :75, :131, :188), H=96 uses 16 experts (:27, :31). Official scripts/PatchTST/etth1.sh:8 seq_len 336, :30-42 arch as stated, lr 1e-4; scripts/Linear/etth1.sh:9 seq_len 336, :24 batch 32, lr 0.005, individual not passed (default 0, official run_longExp.py:51). Official defaults: patience 100 (:80), lradj type3 (:84), itr 2 (:77), loop (:118), train_epochs 100 (:78), num_workers 10 (:76); official exp_main EarlyStopping :112, OneCycleLR :120, ./checkpoints/ :224.",
+    "\u00a73 sha256 table recomputed: all identical files match (including Linear.py fa9640d5 and NLinear.py 4100df5a, which are unprefixed in the prereg). PatchTST_backbone.py 7f0b0830 vs df671731, exp_main.py 9ba1303f vs de76924d, run_longExp.py 9c1728eb vs 44345cb6.",
+    "Labels and \u00a79 do not imply anything about what the authors ran. The suffix says 'released TFPS code with audit-supplied D init' and 'baselines lr-searched per seed, TFPS not'. Q1 says 'Says nothing about the authors' D'. \u00a79 rules out claims about the authors' D scale or finiteness. \u00a710 marks eta = d as 'not in the extract'.",
+    "Baseline asymmetries are stated and lean against the baselines: per-seed best-of-4 lr for the baselines, the authors' tuned lr for TFPS, and a published-lr qualifier on negative labels. A negative horizon label needs every TFPS arm. Scoring is symmetric (same windows, same metric code)."
+   ],
+   "r2_issues_status": [
+    {
+     "issue": "N(0,1) D scale goes against the repo's intended scale and can work against TFPS in Q3",
+     "fixed": "yes",
+     "note": "Arm 2 tfps_gauss_unit = G/sqrt(112) added (owner decision 9). A negative horizon label needs every arm (\u00a77). Pure-val-MSE selection is co-reported with a SELECTION-SENSITIVE suffix. The aux share is logged. 'Most literally' is gone: \u00a75 says 'Neither scale is claimed to be the paper's'."
+    },
+    {
+     "issue": "m_336 rests on unverified Table 1 values; DLinear may beat TFPS in the paper itself",
+     "fixed": "partly",
+     "note": "Per-baseline m_{H,B} now come from the extract. A FREEZE check against the PDF is a precondition, and m_{H,B} <= 0 makes that (H,B) non-gating. Two gaps remain. The precondition's cell list cannot identify the 'best other baseline' or confirm the inferred column headers. And 'non-gating' does not say how rules 1-4 ('some B' / 'both B') and the Bonferroni count change. See issues 1-2."
+    },
+    {
+     "issue": "single minimum margin used for both baselines",
+     "fixed": "yes",
+     "note": "m_{H,B} per baseline in Q3. m_H is kept only for Q2/Q2b, as an effect-size yardstick."
+    },
+    {
+     "issue": "TFPS released defaults missing from the config list",
+     "fixed": "yes",
+     "note": "\u00a72 lists individual 1 (:51), affine 0, subtract_last 0, padding_patch end, decomposition 0, num_workers 10, expert dropout 0.1 (SparseMoE.py:16). \u00a75 states num_workers 0 / CPU deviations and keeps individual as each repo released it. All verified."
+    },
+    {
+     "issue": "D_gauss RNG wording ambiguous (time-D could equal freq-D)",
+     "fixed": "yes",
+     "note": "Dedicated torch.Generator seeded 30000+seed (time) and 40000+seed (freq); the global RNG is untouched. Self-tests cover time-D != freq-D and bitwise-equal non-D params across arms (\u00a78)."
+    },
+    {
+     "issue": "permute line citations off",
+     "fixed": "yes",
+     "note": "Time :77 vs :81-85 and frequency :79 vs :83-87, verified by grep."
+    },
+    {
+     "issue": "DLinear config called its 'own published' config",
+     "fixed": "yes",
+     "note": "\u00a75 now says 'DLinear (as configured in scripts/Linear/etth1.sh)'. One small related gap remains: issue 5."
+    },
+    {
+     "issue": "Q1 NaN counts have no logged provenance",
+     "fixed": "partly",
+     "note": "\u00a72 now points to the step (c) N=10 log as the source, and Q1 keeps its scope disclaimer. The 3-process figure (4586-4635) is still printed without a log path. Acceptable because Q1 is descriptive."
+    },
+    {
+     "issue": "'routing may be close to random whatever D is' presumes an answer",
+     "fixed": "yes",
+     "note": "\u00a72 now says the noise is 'large relative to the range of s; arm 5 measures how far routing follows the affinity'."
+    }
+   ],
+   "issues": [
+    {
+     "severity": "major",
+     "issue": "The FREEZE precondition checks too little to settle the margins. 'Eight cells' cannot establish which baseline is the best at H=192/336, because that needs every baseline cell in those rows. The fetch also inferred the column names, so a cell can be correct while sitting in the wrong column. Q2, Q2b and the anchor also use these numbers, but only Q3 labels get the fallback 'unverified' suffix.",
+     "evidence": "PREREG lines 13-17: 'the eight Table 1 cells used below (... TFPS, PatchTST, DLinear, and the best other baseline)'; fallback 'every Q3 label carries \"margins per unverified extract\"'. PAPER_EXTRACT.md:8: 'Table 1 cells were \"reconstructed from garbled layout\" by the fetch and column names were inferred'. The extract also hints at a garble: TSLANet and iTransformer are identical at H=96 (0.387/0.405) and at H=336 MSE (0.491). m_H (best baseline) drives Q2/Q2b EQUIVALENT and ', smaller than m_H' (\u00a77). Paper values drive the anchor (\u00a77).",
+     "fix": "Reword the precondition: 'the Table 1 column headers and the full ETTh1 MSE rows at H=192 and H=336 (all 9 models) are checked against the PDF and recorded in PAPER_EXTRACT.md; m_{H,B}, m_H and the anchor values are then recomputed'. Extend the fallback suffix to every Q2, Q2b, Q3 and anchor line that uses m_H, m_{H,B} or a paper value."
+    },
+    {
+     "severity": "major",
+     "issue": "The 'm_{H,B} <= 0 means non-gating' rule is not carried into the Q3 rules. As written, a REVERSED/VANISHES label could still fire against a baseline that the paper itself does not claim to beat. That label would then read as a reversal of a claim the authors never made.",
+     "evidence": "\u00a71 lines 29-30: 'If the checked m_{H,B} <= 0 for some (H, B), Q3 at that (H, B) becomes a non-gating descriptive comparison.' \u00a77 rules 1-4 quantify over 'some B' / 'both B' in {patchtst, dlinear} with a Bonferroni split over two baselines. Nothing says what happens when one B is removed. The scenario is live: the r2 lens recalled DLinear ~0.481 at H=336, which would give m_{336,DLinear} < 0.",
+     "fix": "Add to \u00a77: 'At a horizon where m_{H,B} <= 0, B is removed from rules 1-4 and from the horizon label and qualifiers. \"Some B\" and \"both B\" range over the remaining baselines. U uses one-sided (1 - 0.05/k) with k = the number of remaining baselines. d_{a,B} and its CI for a removed B are printed as descriptive. If no baseline remains, Q3 at H is DESCRIPTIVE ONLY.'"
+    },
+    {
+     "severity": "major",
+     "issue": "The input-length conflict can make Q3 harsher on TFPS than the paper's claim. If the paper's TFPS Table 1 values come from the appendix input-length search (best L in {96, 192, 336, 512}), then m_{H,B} includes any input-length advantage. A TFPS run fixed at L=96 is then expected to fall short of m_{H,B}, and VANISHES/SHRINKS ('claimed margin excluded') and ANCHOR DRIFT would partly reflect L, not the method. The suffix 'L=96' scopes the run but not the margin's provenance.",
+     "evidence": "PAPER_EXTRACT.md:19-21: 'we searched input lengths among 96, 192, 336, and 512, and report the best-performing configuration for each forecasting length' (described for TFPS) vs the caption 'L = 96 for others'; 'These two statements need reconciling against the PDF.' PREREG \u00a71 line 21: 'not reconciled in the extract'. The FREEZE precondition (lines 13-17) does not include this check. The released scripts/etth1.sh uses seq_len 96 at :19/:75/:131/:188, so L=96 is a fair choice for the arms. The gap is only in how the margin is read.",
+     "fix": "Add to the FREEZE check: record the PDF context of the input-length sentence, i.e. whether it applies to TFPS's Table 1 numbers or to a separate study. If it applies, or if this cannot be settled, add to every negative Q3 label and to TFPS ANCHOR DRIFT: '\u2014 paper's TFPS values may come from an input-length search (L \u2208 {96,192,336,512}); m_{H,B} may include an input-length gain not tested here'. No change to the arms."
+    },
+    {
+     "severity": "minor",
+     "issue": "\u00a71 says more than the extract supports about the absence of k-means/SVD initialisation. \u00a72 also leaves out code evidence of the EDESC k-means+SVD init pipeline.",
+     "evidence": "PREREG line 34: 'no k-means / SVD initialisation is described [E]'. PAPER_EXTRACT.md:14 only says: 'No sentence about k-means or SVD initialisation was found in either part' of a model's reading of the PDF. exp/exp_main.py:12 'from sklearn.cluster import KMeans', imported and never used (grep), alongside the unused Initialization_D import at :24 (which needs k-means labels y_pred, InitializeD.py:50-55). Also, \u00a71 silently drops the duplicated 0.005 from the lr grid that the extract prints.",
+     "fix": "Reword to 'no sentence on k-means/SVD initialisation was found in the extract [E]'. Add to \u00a72: 'KMeans is also imported (exp_main.py:12) and unused'. Write the lr grid 'as printed (0.005 listed twice)'."
+    },
+    {
+     "severity": "minor",
+     "issue": "The horizon label treats tfps_zero, a control that is not a reading of the paper, as a third 'TFPS arm'. This is lenient for negative labels. But if TFPS SURVIVES under both Gaussian readings and the affinity-blind control does not, the result is DEPENDS ON D INIT. That understates a result favourable to the paper.",
+     "evidence": "\u00a77 'Horizon label (owner decision 9): if all three per-arm labels are equal \u2192 that label ... Otherwise \u2192 DEPENDS ON D INIT (gauss: \u2026, unit: \u2026, zero: \u2026)'. \u00a75 calls arm 3 'control: routing ignores affinity'.",
+     "fix": "Keep the rule (owner decision 9). Add: 'When gauss and gauss_unit agree and only zero differs, the label reads DEPENDS ON D INIT \u2014 <label> UNDER BOTH GAUSSIAN SCALES (zero: \u2026)'. Optionally note in \u00a75 that N(0,1/112) equals xavier_normal_ for 112x112."
+    },
+    {
+     "severity": "minor",
+     "issue": "DLinear's own official implementation (LTSF-Linear) is not used. The PatchTST repo's copy is used instead, but \u00a75's deviation list only compares against the PatchTST repo's script. Since the paper says baselines were rerun 'with codes provided by their official implementation', this deviation should be stated.",
+     "evidence": "PAPER_EXTRACT.md:22. PREREG \u00a75 lines 136-139. The label suffix already says 'in the official PatchTST code', which is accurate. LTSF-Linear is not in work/repos, so byte-identity of models/DLinear.py with it cannot be checked here.",
+     "fix": "Add one sentence to \u00a75: 'DLinear runs from the PatchTST repo's copy (models/DLinear.py 0893b53c), not from the LTSF-Linear repo; its training defaults (epochs, patience) are PatchTST's, not LTSF-Linear's.'"
+    }
+   ],
+   "summary": "r3 tests TFPS as released, and the paper's claims are taken from exact extract quotes, with [E] marking what is unverified. Both D scales are defensible Gaussian readings, and neither is claimed to be the authors'. Baselines match the official PatchTST repo, and every deviation is stated. Margins are computed correctly from the extract. All \u00a72 and \u00a75 citations and sha256 values re-verify. All r2 fairness issues are fixed or partly fixed. Three major, non-blocking fixes are needed before FREEZE. (1) Widen the PDF check to full rows plus column headers, and apply the unverified suffix to Q2 and the anchor too. (2) Define how rules 1-4 behave once a baseline is non-gating, so no REVERSED fires against a claim the paper never made. (3) Settle the L-search sentence, or qualify negative labels with it. All three can be applied mechanically."
+  },
+  {
+   "lens": "foregone",
+   "model": "this session's model",
+   "round": 3,
+   "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+   "verdict": "LICENSED_WITH_FIXES",
+   "r2_issues_status": [
+    {
+     "issue": "Q2 confounded by checkpoint selection (aux term ~10x val MSE under N(0,1))",
+     "fixed": "yes",
+     "note": "Pure-val-MSE checkpoint co-reported with a SELECTION-SENSITIVE suffix (PREREG \u00a76 l.153-155, \u00a77 l.183-184). Aux share and best epoch logged (l.156-158). \u00a75 l.116-118 states the scale consequence in advance. The new arm 2 also removes most of the confound for that contrast: measured aux at init is d1+d2 ~0.0103 per EDESC for N(0,1/112) vs 0.0106 for D=0."
+    },
+    {
+     "issue": "Reachability text wrong for Q3 (SHRINKS width floor, Welch df), and the extension trigger inherited the error",
+     "fixed": "yes",
+     "note": "\u00a77 l.221-228 now uses hw_L+hw_U < m_{H,B}, Welch-Satterthwaite df and an sd-ratio case, and the trigger (l.237) uses the same width. I recomputed every number in l.221-228 and they are correct to 3 digits. Two small leftover misstatements are listed below as minor issues (Q2 sub-label floor, Q2b paired floor)."
+    },
+    {
+     "issue": "tfps_zero routing numbers are fixed by construction",
+     "fixed": "yes",
+     "note": "\u00a75 l.120-121 states A ~0.25 and H_r ~ln 4, with a flag if A falls outside 0.25 +/- 0.02. Re-measured: s range exactly 0, argmax usage [1,0,0,0], A 0.2500, H_r 1.3861."
+    },
+    {
+     "issue": "A cut 0.30 sits next to the init value; A ceiling not stated",
+     "fixed": "yes",
+     "note": "The ceiling is simulated and printed beside A, and the mean row range of s is reported (l.185-189). The normalised (A-0.25)/(A_onehot-0.25) form was not adopted. That is acceptable because both raw numbers are printed."
+    },
+    {
+     "issue": "Citation: time-file permutes at :81-85",
+     "fixed": "yes",
+     "note": "\u00a72 l.60 cites :77 vs :81-85."
+    }
+   ],
+   "issues": [
+    {
+     "severity": "major",
+     "issue": "The name of the Q3 horizon fallback label, DEPENDS ON D INIT, makes a causal claim about D that the rule does not test. The rule fires whenever the three per-arm labels disagree and are not all negative. Seed noise alone often causes that disagreement, even when all three arms have the same distribution (which the init probe suggests for unit vs zero, see the next issue). The label is therefore often the modal horizon outcome in cases where D has no effect. It can also contradict the Q2 labels printed beside it, for example Q2 EQUIVALENT for both contrasts next to Q3 DEPENDS ON D INIT. This does not make any verdict unreachable. It does make the label wrong as worded in many plausible cases.",
+     "evidence": "Monte Carlo of the \u00a77 rules as written: 20k reps, n=5, Welch-Satterthwaite, one-sided 95% L and 97.5% U, three TFPS arms iid (D irrelevant), sd_PatchTST 0.004, sd_DLinear 0.0015, shared baseline samples. P(DEPENDS ON D INIT) with identical arms: H=192, true gain m/2, sd_T 0.006: 0.60; sd_T 0.012: 0.75; true gain m, sd_T 0.012: 0.76. H=336, true gain 0, sd_T 0.012: 0.75 (single-arm VANISHES 0.53, INCONCLUSIVE 0.40). Script: scratchpad mc.py, re-runnable in about 10 s.",
+     "fix": "Rename the fallback to a neutral `NOT CONSISTENT ACROSS TFPS ARMS (gauss: ..., unit: ..., zero: ...)`. Add: 'if both Q2 contrasts at this H are labelled EQUIVALENT or INCONCLUSIVE, append \"\u2014 Q2 detects no D effect; arm disagreement may be seed noise\"'. Owner decision 9 is untouched: a negative still needs every arm."
+    },
+    {
+     "severity": "minor",
+     "issue": "tfps_gauss_unit is, at init, indistinguishable in routing from tfps_zero. Q2 for that contrast is therefore expected, though not guaranteed by construction, to give EQUIVALENT (if sd allows) or INCONCLUSIVE, with about 5% per side for rules 1-2 under a null. The prereg's stated init numbers for this arm are also off. Two exact facts follow from Cluster.py:61-68. (a) s_unit(z) = s_N01(z/sqrt(112)) for the same G, so the unit arm reaches the N(0,1) arm's init spread only if ||z|| grows about 10.6x (the s range of a random-subspace D is bounded near 0.14 at any scale; r2 sweep). (b) argmax s is scale-invariant, so at init arms 1 and 2 have the same argmax partition, and the Q2b noise-off unit model starts from the same deterministic routing as arm 1. The outcome stays open: training can grow z or rotate D through the KL term. This is not blocking, because Q2 asks whether the init matters in the released code, and 'no' is a legitimate answer. But a reader should know in advance that the unit arm is effectively a second random-routing control unless training sharpens s, and that the routing suffix will almost surely fire for it.",
+     "evidence": "Forward probe, no training: released Model (models/PatchTST_MoE_cluster.py), H=192 config from scripts/etth1.sh:77-89, torch.manual_seed(2021), eval mode, first 4 ETTh1 test batches (12288 rows per router), D = G/sqrt(112) with G drawn from Generator(30000+2021 / 40000+2021), A averaged over 20 noise draws. Time router: mean row range of s 0.0051 (median 0.0047, max 0.021), row max 0.2527, A 0.2516 (sd over draws 0.004), H_r 1.3861. Freq router: range 0.0082 (max 0.035), A 0.2505. Same G at sd 1 reproduces r2: range 0.109/0.119, A 0.281/0.282. D=0: range 0, A 0.2500. Argmax usage is identical for the unit and N(0,1) arms (time [0.330, 0.283, 0.151, 0.236]). Analytic check: range ~0.138*||z||^2/(||z||^2+4*eta*d) gives 0.0054 at ||z||^2=22.8, which matches.",
+     "fix": "\u00a75 l.118: replace 'row range \u2248 0.02, A \u2248 0.26' with 'mean row range \u2248 0.005 (time) / 0.008 (freq), max \u2248 0.02-0.035; A \u2248 0.251 / 0.250, within one draw-sd of the zero arm's 0.250'. Add one sentence: 'At init, arm 2 routing is indistinguishable from arm 3. Q2(gauss_unit) EQUIVALENT or INCONCLUSIVE is the expected outcome unless training sharpens s; s_unit(z) = s_N01(z/\u221a112), and arms 1-2 share argmax s at init.' Add per-epoch mean row range of s per router to the \u00a76 log, so the reader can see whether training changed it."
+    },
+    {
+     "severity": "minor",
+     "issue": "Reachability of the Q2 ', smaller than m_H' sub-labels is misstated. They use the 90% two-sided Q2 CI, so the floor is 2*hw_90 < m_H, i.e. sigma < m_H/2.352 at n=5 (0.0047 at H=192, 0.0021 at H=336). The prereg instead lumps them with SHRINKS under hw_L+hw_U, i.e. m/2.635. The stated floor is too strict by about 12%.",
+     "evidence": "PREREG l.179-180 (sub-labels on the 90% CI) vs l.227-228. Welch df 8: t.95 = 1.860, se = 0.632*sigma, hw = 1.176*sigma.",
+     "fix": "At l.227, split the sentence: 'Q2 \", smaller than m_H\": 2\u00b7hw < m_H \u2192 \u03c3 < m_H/2.352 (0.0047 / 0.0021 at n=5; m_H/1.55 at n=10)'."
+    },
+    {
+     "severity": "minor",
+     "issue": "Reachability of NOISE-OFF EQUIVALENT is stated with the unpaired Welch floor (sigma < 0.0094 / 0.0043), but Q2b uses a paired t over seeds (l.173, l.192). Its floor is on the sd of the per-seed differences, sd_diff < m_H/0.953 at n=5 (df 4, t.95 = 2.132). It is also not stated whether Q2b uses n=10 when the extension fires. Q2b is excluded from the trigger, but arms 1-2 gain seeds.",
+     "evidence": "PREREG l.192, l.225, l.242.",
+     "fix": "l.225: 'NOISE-OFF EQUIVALENT: paired hw = t_{0.95,n\u22121}\u00b7sd_diff/\u221an < m_H \u2192 sd_diff < 0.0115 / 0.0052 at n=5'. l.242: 'Q2b uses every seed the arms have (n=10 if extended), with the n=5 table beside it.'"
+    },
+    {
+     "severity": "minor",
+     "issue": "The item-level rules ('same label at both horizons') do not say whether suffixes, sub-labels (', smaller than m_H') and the parenthesised per-arm contents of the fallback label count toward 'same'. Two analysts could give different item labels from the same tables.",
+     "evidence": "PREREG l.190, l.194, l.218.",
+     "fix": "Add: 'Same label means the same base label (the token before any comma, dash-suffix or parenthesis); suffixes and sub-labels are printed per horizon.'"
+    }
+   ],
+   "answers": {
+    "q1_unit_vs_zero_routing": "At init the two are not distinguishable. A is 0.2516/0.2505 for unit vs 0.2500 for zero, a gap of less than 1 noise-draw sd. The mean s range is 0.005/0.008 for unit vs 0 for zero. Q2(unit) is expected, not guaranteed, to come out EQUIVALENT or INCONCLUSIVE. It can differ only if training grows ||z|| by about 10x or the KL term rotates D. The routing suffix (A < 0.30) will almost surely fire for unit.",
+    "q2_horizon_rule": "Negative horizon labels are reachable, and including tfps_zero does not make them unreachable. Per-arm labels are strongly correlated because all three arms share the same baseline samples. With identical arms and no true gain, VANISHES (or worse) fires at the horizon level 0.86-0.96 at H=192 and 0.88-0.96 at H=336 for sd_T \u2264 0.006, close to the single-arm rate. Negatives become rare only when the zero arm is truly better (H=336, sd_T 0.012: 0.06), or when noise is large (H=336, sd_T 0.012: 0.18 vs single-arm 0.53). The real cost of the rule falls on SURVIVES, which needs unanimity (0.14-0.24 vs 0.51-0.61 for a single arm at sd_T 0.012), and on the over-frequent DEPENDS ON D INIT label (major issue above).",
+    "q3_reachability_numbers": "Recomputed, all correct. n=5 equal sd: df 8, t 1.860/2.306, hw_L 1.176\u03c3, hw_U 1.458\u03c3. sd ratio 0.1: df 4.08, hw_L 0.956\u03c3_T, hw_U 1.243\u03c3_T (prereg 0.953/1.238, a negligible difference). n=10: df 18, 0.775\u03c3/0.940\u03c3. Q2 EQUIVALENT: 0.0094/0.0043 (n=5), 0.0142/0.0064 (n=10). SHRINKS: PatchTST 0.0140/0.0049, DLinear 0.0042/0.0057 (n=5). The 'no width floor' claim for REVERSED/VANISHES/SURVIVES/Q2 rules 1-2 is literally true. VANISHES needs U in [0, m) because REVERSED is checked first, a window of width m in d. Exceptions: the Q2 sub-label and Q2b floors (minor issues). For the DLinear contrast in the realistic unequal-sd case, the SHRINKS floor is \u03c3_T < 0.011/2.199 = 0.0050 at H=192."
+   },
+   "measurements": {
+    "probe": "Forward only, no training, about 3 s CPU. Script at /tmp/claude-0/-home-claude/935b490b-d7df-59d5-88a2-c19cacae8904/scratchpad/probe.py (patches EDESC.__init__ and NoisyTopkRouter_Cluster.forward in-process; nothing under work/repos edited).",
+    "H192_init": {
+     "gauss_N01": {
+      "time": {
+       "s_range_mean": 0.1086,
+       "s_rowmax_mean": 0.3068,
+       "A": 0.2812
+      },
+      "freq": {
+       "s_range_mean": 0.1191,
+       "A": 0.2821
+      },
+      "d1_time": 1.15,
+      "d2": [
+       0.997,
+       1.011
+      ]
+     },
+     "gauss_unit": {
+      "time": {
+       "s_range_mean": 0.0051,
+       "s_range_median": 0.0047,
+       "s_range_max": 0.0214,
+       "s_rowmax_mean": 0.2527,
+       "A": 0.2516,
+       "A_sd_over_draws": 0.004,
+       "H_r": 1.3861,
+       "argmax_usage": [
+        0.33,
+        0.283,
+        0.151,
+        0.236
+       ]
+      },
+      "freq": {
+       "s_range_mean": 0.0082,
+       "s_range_max": 0.0345,
+       "A": 0.2505,
+       "A_sd_over_draws": 0.0045
+      },
+      "d1": [
+       0.00137,
+       0.00129
+      ],
+      "d2": [
+       0.0089,
+       0.00903
+      ]
+     },
+     "zero": {
+      "time": {
+       "s_range_max": 0.0,
+       "A": 0.25,
+       "H_r": 1.3861,
+       "argmax_usage": [
+        1,
+        0,
+        0,
+        0
+       ]
+      },
+      "freq": {
+       "s_range_max": 0.0,
+       "A": 0.25
+      },
+      "d1": [
+       0.01058,
+       0.01058
+      ],
+      "d2": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "monte_carlo": "/tmp/claude-0/-home-claude/935b490b-d7df-59d5-88a2-c19cacae8904/scratchpad/mc.py: \u00a77 Q3 per-arm rules plus the horizon rule, 20k reps per cell, grid H \u2208 {192, 336} \u00d7 sd_T \u2208 {0.003, 0.006, 0.012} \u00d7 true gain \u2208 {0, m/2, m} \u00d7 zero-arm shift."
+   },
+   "summary": "No verdict family is settled or made unreachable by how the arms are built. The forward probe shows that tfps_gauss_unit routing at init matches tfps_zero (A 0.2516/0.2505 vs 0.2500; mean s range 0.005/0.008), because s_unit(z) = s_N01(z/\u221a112). Q2(unit) is therefore expected, though not guaranteed, to come out EQUIVALENT or INCONCLUSIVE, and \u00a75's init numbers for that arm should be corrected. The all-arms rule for negative Q3 labels does not make them unreachable: shared baselines keep the arm labels correlated (VANISHES at the horizon level 0.86-0.96 under a no-gain null). But DEPENDS ON D INIT fires 60-80% with identical arms, so it needs a neutral name (major, mechanical fix). The \u00a77 reachability numbers are correct, except for the Q2 sub-label and Q2b paired floors."
+  },
+  {
+   "lens": "leakage",
+   "model": "this session's model",
+   "round": 3,
+   "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+   "verdict": "LICENSED_WITH_FIXES",
+   "r2_issues_status": [
+    {
+     "issue": "Selection criterion differs in magnitude between D arms (aux ~10x val MSE under N(0,1)); log components and pre-register pure-val-MSE re-selection with suffix",
+     "fixed": "yes",
+     "note": "Sec.2 states the scale effect; sec.6 per-epoch log (val MSE, aux per router, epochs-to-stop, aux share); pure-val-MSE checkpoint co-reported; SELECTION-SENSITIVE suffix on Q2 (both selections) and on negative Q3 labels; arm 2 (N(0,1/112)) added by owner decision 9. Q3 suffix only for negative labels, which is the conservative direction (released selection can only hurt TFPS through the aux term)."
+    },
+    {
+     "issue": "Pure-val-MSE hook on vali() would also fire on the test pass (exp_main.py:257-258)",
+     "fixed": "yes",
+     "note": "Sec.8: keyed on val-loader identity (loader built at exp_main.py:139), self-test: once per epoch, set_type==1 only, never on test loader. set_type is set at data_loader.py:31, val=1."
+    },
+    {
+     "issue": "Recompute of recorded val MSE impossible without RNG state (noisy router SparseMoE.py:59, shuffled val loader data_factory.py:28-30)",
+     "fixed": "yes",
+     "note": "Sec.8 saves torch/numpy/python RNG state before each val pass; restore-and-reproduce to 1e-6 is a self-test. Saving state does not consume RNG. With num_workers 0 the only RNG consumers in a val pass are the RandomSampler/iterator seed draw and randn_like at SparseMoE.py:59 (grep of layers/ and models/ finds no other rand call), so the test is satisfiable."
+    },
+    {
+     "issue": "Baseline lr-selection value not returned by train() (EarlyStopping local, tools.py:47,69; 6-decimal print)",
+     "fixed": "yes",
+     "note": "EarlyStopping subclass replacing exp.exp_main.EarlyStopping (looked up by name from module globals at tfps exp_main.py:4/:152, official :4/:112) writes val_loss_min and best epoch at each save; lr rule reads only that. Residual precision note in issues (baseline val loss is float32)."
+    },
+    {
+     "issue": "itr defaults to 2 in both run_longExp.py (tfps :91, official :77), second run per call",
+     "fixed": "yes",
+     "note": "--itr 1 in shared settings (sec.5) and wrapper asserts exactly one setting dir and one checkpoint.pth per run (sec.8). Official setting string (official run_longExp.py:120) lacks lr and seed; unique model_id with _lr<x> and per-run cwd removes the collision."
+    },
+    {
+     "issue": "D draw location ambiguous (re-seeding inside EDESC vs shifting the global stream)",
+     "fixed": "yes",
+     "note": "Dedicated torch.Generator 30000+seed (time) / 40000+seed (freq), global RNG untouched; torch.Tensor allocation at Cluster.py:30 consumes no RNG, so replacing it with a generator draw leaves the global stream intact; self-tests: non-D params bitwise equal across arms and equal global RNG state after construction. New side effect found: these seeds coincide with eval-noise seeds k=3,4 (issue below)."
+    },
+    {
+     "issue": "NaN val loss makes EarlyStopping save every epoch (tools.py:50-63); not in failed-run rule",
+     "fixed": "yes",
+     "note": "Sec.6 failed run includes any non-finite val loss; sec.5 a non-finite-val run cannot be selected in the lr grid."
+    },
+    {
+     "issue": "Extension is a data-dependent second look; commit n=5 files and half-widths first; full lr grid for new seeds",
+     "fixed": "yes",
+     "note": "Sec.7: committed script extension_trigger.py reads only per-seed primary scores, widths only, output and n=5 per-run files committed before any table or label; full lr grid, lr re-selected by the same rule; n=5 table reported beside n=10; Q2b excluded."
+    },
+    {
+     "issue": "Budget asymmetry: baselines best-of-4 lr on val, TFPS one authors' lr of unknown provenance",
+     "fixed": "yes",
+     "note": "Sec.5 TFPS lr paragraph, label suffix 'baselines lr-searched per seed, TFPS not', sec.9; plus owner decision 11 published-lr table used as a qualifier on negative Q3 labels."
+    },
+    {
+     "issue": "Checkpoint path: test(test=1) hard-codes ./checkpoints/ (tfps exp_main.py:282, official :224); sensitivity checkpoint must not overwrite checkpoint.pth (tools.py:68)",
+     "fixed": "yes",
+     "note": "Sec.6: checkpoint loaded by absolute path with sha256, never via test(test=1); checkpoint_valmse.pth separate file, never overwriting checkpoint.pth."
+    },
+    {
+     "issue": "(other lenses, leakage-adjacent) single eval-noise draw per TFPS run; averaging must be chosen before scores",
+     "fixed": "yes",
+     "note": "Sec.6: K=5 draws seeded 10000k+seed, run score = mean over draws, fixed before any score; per-draw scores saved, mean |draw-mean| reported and flagged vs m_H/4. Same rule for the val-MSE checkpoint. No draw-level choice is left open except for the routing measurement (issue below)."
+    }
+   ],
+   "issues": [
+    {
+     "severity": "major",
+     "issue": "Step (c) wall-time measurement runs, done before FREEZE, will print test MSE for the scored configurations. 'Step (c) measures epochs-to-stop and s/epoch per arm' needs full training runs at H=192/336 under the released loop, which prints the test loss every epoch and the final test mse/mae, and appends them to a result file. If those runs use a seed in S (e.g. 2021, the released default) they are, up to determinism, the scored runs themselves, seen before the design is frozen. Nothing in sec.8 keeps those numbers away from the people who still finalise the prereg (FREEZE transcription of margins, resumable-state decision, any engineering choice).",
+     "evidence": "tfps exp/exp_main.py:258 (test pass every epoch), :260-261 (prints Test Loss), :383-390 (prints and appends mse to ./result_*.txt); run_longExp.py:163 (exp.test after train); official exp_main.py:200-203. PREREG sec.8 lines 275-278 (step (c) measures epochs-to-stop per arm), sec.8 line 280 (budget 'replaced by step (c) measurements'). Precedent: audits/tfps/feas_zero.log and feas_orth.log already show test losses (H=96, 3 epochs, seed 2021, lr 5e-4; not a scored config).",
+     "fix": "Add to sec.8: step (c) timing/feasibility runs use a seed outside S and outside the extension set (e.g. 999), are never scored, and their stdout passes through a filter that drops lines containing 'Test Loss' and 'mse:' (and the wrapper deletes ./result_*.txt and test_results/ after the run); epochs-to-stop is read from the filtered log. Record in STATE.md that no H=192/336 test number was seen before FREEZE. Also disclose in sec.2 or sec.9 that the H=96 feasibility logs (feas_zero/feas_orth, 3 epochs) exposed two test MSEs at a horizon outside the scored set."
+    },
+    {
+     "severity": "minor",
+     "issue": "Seed collision between eval-noise draws and the D generators. Eval draw k uses global seed 10000k+seed, so k=3 gives 30000+seed (the time-D generator seed) and k=4 gives 40000+seed (the frequency-D generator seed), for every seed. torch's CPU generator gives the same normal stream for the same seed whether global or dedicated, so the 'fresh' router noise in draws 3 and 4 is largely a shifted copy of the D initial values (G) of arms 1-2. Probe (torch 2.4.1 CPU, seed 2021): global manual_seed(32021) then randn(1536,4) equals randn(112,112) from Generator(32021) exactly (100% of entries); with one int64 draw first (what a DataLoader iterator consumes), 75% of entries equal G at a shift of 2. Effect on scores is probably negligible (each noise value is one of 12544 D entries), but draws 3 and 4 are not independent of arm 1/2's initialisation as the design assumes, and it is free to avoid.",
+     "evidence": "PREREG sec.5 lines 111-112 (30000+seed, 40000+seed) vs sec.6 line 146 (10000k+seed, k=1..5); SparseMoE.py:59 (torch.randn_like on the global RNG); probe run in this review (no training).",
+     "fix": "Change the eval-noise seeds to a disjoint range, e.g. 1_000_000 + 10000k + seed (or D generators to 7_000_000+seed / 8_000_000+seed), and add a self-test in sec.8 asserting that the sets {training seeds}, {D generator seeds}, {eval-noise seeds} are pairwise disjoint for S and the extension seeds."
+    },
+    {
+     "severity": "minor",
+     "issue": "The pure-val-MSE checkpoint is the min of val MSE over the epochs that the released criterion lets the run reach, not an early stop on val MSE. Its candidate set therefore differs by arm: under arm 1 the aux term keeps falling, so the run can go much longer (up to 100 epochs) and the val-MSE min is taken over more noisy (one router-noise draw per epoch) candidates than under arm 3. This is a val-side budget difference, not test leakage, but the sensitivity is not the 'pure-val-MSE early stopping' a reader might assume. Tie handling is also unstated.",
+     "evidence": "tfps exp/exp_main.py:257,262-265 (stop decided on total val loss); utils/tools.py:50-63; PREREG sec.6 lines 153-155.",
+     "fix": "Sec.6: state 'checkpoint_valmse = epoch with the lowest val MSE among epochs 1..stop epoch of the released criterion; ties to the earliest epoch', and print the per-arm mean number of candidate epochs next to the pure-val-MSE table (already logged as epochs-to-stop)."
+    },
+    {
+     "severity": "minor",
+     "issue": "Published-lr qualifier (owner decision 11) is under-specified in three places: (a) 'if it does not hold there' does not say whether a more negative published-lr label (e.g. REVERSED where the searched label is VANISHES) counts as holding; (b) no rule for a published-lr run that is non-finite while the seed is not failed under the search rule (a baseline seed fails only if all 4 lr runs fail); (c) the name 'published lr' omits that the other published settings differ (DLinear script batch 32, both scripts seq_len 336, patience 100).",
+     "evidence": "PREREG sec.5 lines 134-139, sec.7 lines 214-217; patchtst_official scripts/PatchTST/etth1.sh:42 (lr 1e-4, batch 128, seq_len 336 at :8), scripts/Linear/etth1.sh:24,38,52 (lr 5e-3, batch 32, seq_len 336 at :9); official run_longExp.py:80 (patience 100).",
+     "fix": "Sec.7: 'holds' = published-lr horizon label is in {REVERSED, VANISHES, SHRINKS} and at least as negative as the searched label (order REVERSED < VANISHES < SHRINKS). Sec.6: in the published-lr table a non-finite run at the published lr is a failed run for that table, with the same BLOCKED/n=4 rules. Label text: 'published-lr (lr from the PatchTST repo scripts; L=96, batch 128, patience 20 as sec.5)'."
+    },
+    {
+     "severity": "minor",
+     "issue": "Routing measurement (arm 5) does not say which eval-noise draw A and H_r are computed on. With K=5 draws available, picking one after looking would be a free choice that feeds the ROUTER NOISE suffix (A < 0.30).",
+     "evidence": "PREREG sec.5 arm 5 row (line 107) vs sec.6 line 146 (K=5 draws); sec.7 lines 185-189.",
+     "fix": "Sec.5/6: A, H_r, row max and row range are computed on every one of the K=5 draws and averaged per run (same as the score)."
+    },
+    {
+     "severity": "minor",
+     "issue": "No self-test that the instrumentation (val-pass hook, criterion/loader wrapping, EarlyStopping subclass, extra checkpoint save) leaves training unchanged. A hook that re-implements vali() or calls the model again would shift the global RNG stream (router noise SparseMoE.py:59, val shuffle) and silently make the audited runs differ from the released loop, differently by arm.",
+     "evidence": "PREREG sec.8 lines 264-271 test only the recorded values, not non-interference; tfps exp/exp_main.py:73-135 (vali takes criterion as argument, so recording MSE by wrapping criterion is possible without extra forward passes).",
+     "fix": "Add to sec.8: a 2-epoch TFPS run (arm 1, short train_epochs) and a 2-epoch PatchTST run with and without the instrumentation give bitwise-equal state_dicts, val losses and global RNG state at the end."
+    },
+    {
+     "severity": "minor",
+     "issue": "Baseline 'full float' val_loss_min is float32, not float64: the official vali() averages a list of 0-d float32 tensors with np.average, which returns numpy.float32 (checked). Exact ties between lr runs are improbable but less so than the text implies; the tie rule covers it.",
+     "evidence": "patchtst_official exp/exp_main.py:93-96 (total_loss.append(loss) of tensors, np.average); TFPS uses loss.item() (tfps exp_main.py:132) so its value is float64. Probe: np.average([torch.tensor(0.5), torch.tensor(0.25)]) -> numpy.float32.",
+     "fix": "Sec.5: write 'val_loss_min as returned by the repo's vali (float32 for the official repo), written with repr()', keep 'ties to the smaller lr'."
+    }
+   ],
+   "checks_passed": [
+    "No arm selects on test: early stopping and type3 lr read only vali_loss (tfps exp_main.py:257,262,267-268; official :199,204,209-210); the per-epoch test pass runs under eval()+no_grad (tfps :75-76,134) and only shifts RNG by shape.",
+    "Baseline lr chosen on val only, per seed, ties to smaller lr, non-finite excluded; TFPS one run; asymmetry disclosed in every label suffix.",
+    "K=5 averaging fixed before scores; noise-off arm and routing measurement reuse val-selected checkpoints; no test-based choice of draw for scores.",
+    "Extension trigger: mechanical, widths only, primary scores only, committed with n=5 files before labels; full lr grid re-run for new seeds.",
+    "Checkpoints loaded by absolute path with sha256; unique model_id per arm/H/seed/lr and per-run cwd avoid the official setting string's missing lr/seed (official run_longExp.py:120) and the hard-coded ./checkpoints/ in test(test=1).",
+    "Dedicated generator for D does not touch the global stream (Cluster.py:30 uses an uninitialised torch.Tensor); time EDESC is built before the frequency EDESC (models/PatchTST_MoE_cluster.py:156,171).",
+    "Scaler fit on train rows only and split borders shared by all arms (data_loader.py:48-62, byte-identical in both repos)."
+   ],
+   "summary": "All r2 leakage/selection/budget issues are fixed: the val-loader-keyed hook with RNG save/restore, the EarlyStopping subclass, --itr 1, absolute-path loading, the NaN rule, the committed width-only extension trigger, and the disclosed lr asymmetry. No arm selects on test. One major non-blocking gap: step (c) timing runs would print H=192/336 test MSE before FREEZE, possibly on a scored seed, so they need an off-set seed and filtered output. Minor: the eval-noise seeds for k=3/4 equal the D generator seeds (probe: the noise is a shifted copy of G); the pure-val-MSE candidate set and ties are unstated; the published-lr qualifier is underdefined; the routing-measurement draw is unstated; there is no non-interference self-test; baseline val loss is float32."
+  },
+  {
+   "lens": "statistics",
+   "model": "this session's model",
+   "round": 3,
+   "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+   "verdict": "LICENSED_WITH_FIXES",
+   "r2_issues_status": [
+    {
+     "issue": "r2-1 reachability paragraph wrong for SHRINKS / unequal variances",
+     "fixed": "partly",
+     "note": "Every Q3 number in the r3 paragraph recomputes correctly: Welch-Satterthwaite df 8.00 / 4.08 / 18.00; t.95 1.8595 / 2.1199 / 1.7341; t.975 2.3060 / 2.7551 / 2.1009; hw_L 1.176 / 0.953 / 0.775 sigma; hw_U 1.458 / 1.238 / 0.940 sigma; SHRINKS sigma < m/2.635 -> PatchTST 0.0140 / 0.0049, DLinear 0.0042 / 0.0057; n=10 m/1.715 -> 0.0216 / 0.0076, 0.0064 / 0.0087; Q2 EQUIVALENT 0.0094 / 0.0043 (n=5), 0.0142 / 0.0064 (n=10). Still wrong: the Q2 ', smaller than m_H' sub-labels and NOISE-OFF EQUIVALENT are given the wrong thresholds, and the Monte Carlo sentence quotes r2-rule figures (see issues)."
+    },
+    {
+     "issue": "r2-2 extension trigger not an exact formula",
+     "fixed": "partly",
+     "note": "Now a formula, computed by a committed script from widths only, committed before any label is printed, with Q2b excluded and n=4 handled. Four inputs are still unspecified: which selection, which baseline table, BLOCKED arms, and non-gating (H,B) pairs (see issues)."
+    },
+    {
+     "issue": "r2-3 union over two baselines inflates the 'some B' negatives",
+     "fixed": "yes",
+     "note": "U is now the one-sided 97.5% bound (Bonferroni) and L stays at 95% (intersection-union). Simulated with true gain = m for both B: P(U_B < m for either B) = 0.031-0.039 (was 0.082). With true gain 0: P(L > 0) = 0.048-0.054 per baseline."
+    },
+    {
+     "issue": "r2-4 failed-run rule",
+     "fixed": "yes",
+     "note": "Adds the suffix, the worst-seed sensitivity, BLOCKED at >=2/5 or >=3/10, the lr-grid rule, and Q2/Q3 BLOCKED propagation. Small gaps: the suffix text covers only '1 FAILED RUN', and the three-arm horizon rule has no case for a BLOCKED arm (see issues)."
+    },
+    {
+     "issue": "r2-5 VANISHES/SURVIVES wording overclaims",
+     "fixed": "yes",
+     "note": "Labels are now defined in words, and the point estimate and CI are printed with every label. The supporting MC numbers are stale (r2 rules). The r3 rules give these rates at true gain m/2: per-arm VANISHES 0.07-0.34; horizon-level VANISHES 0.00-0.23."
+    },
+    {
+     "issue": "r2-6 A<0.30 qualifier ambiguous",
+     "fixed": "yes",
+     "note": "Per router, per arm a in {1,2}, with the ceiling and the distribution across seeds printed. Arm-3 tie-break documented."
+    },
+    {
+     "issue": "r2-7 Q2 asymmetry, no rule 0, no item level",
+     "fixed": "yes",
+     "note": "Both sub-labels, rule 0 (BLOCKED / PREMISE FAILED), and item level for Q2, Q2b and Q3."
+    },
+    {
+     "issue": "r2-8 single best-baseline margin m_H used for both baselines",
+     "fixed": "yes",
+     "note": "Superseded: Q3 now uses per-baseline m_{H,B}, recomputed from the extract: 0.037, 0.011, 0.013, 0.015; m_192 = 0.011, m_336 = 0.005 (best: DLinear 0.434, FITS 0.489). See the new issue on m <= 0 after the FREEZE check."
+    },
+    {
+     "issue": "r2-9 per-seed score, float64, seed-only CIs",
+     "fixed": "yes",
+     "note": "Stated. K=5 eval-draw averaging is pre-chosen."
+    },
+    {
+     "issue": "r2-10 Q2b pairing / anchor interval",
+     "fixed": "yes",
+     "note": "Paired t for Q2b; anchor uses a single-run prediction interval."
+    }
+   ],
+   "issues": [
+    {
+     "severity": "major",
+     "issue": "The three-arm horizon rule's fallback label 'DEPENDS ON D INIT' fires often when D init makes no difference, so it asserts an effect no test has shown. Any disagreement among the per-arm labels produces it, for example SURVIVES/SURVIVES/SHRINKS from sampling noise or VANISHES/VANISHES/INCONCLUSIVE. Per-arm labels are thresholded and the arms are noisy, so three arms with identical true accuracy often disagree. At large TFPS seed sd this label, not INCONCLUSIVE, becomes the modal outcome.",
+     "evidence": "Monte Carlo (simulations key), all three arms with the same true mean. True gain = m: P(DEPENDS) = 0.09-0.13 even at sigma_T = 0.002 (rho 0; 0.04-0.06 at rho 0.9). It is 0.11-0.22 at sigma_T 0.005-0.01, and 0.73-0.77 at sigma_T 0.02 (rho 0). True gain = m/2: 0.55 at H=192 and 0.78 at H=336 at sigma_T 0.01 (rho 0). True gain = 0, H=336, sigma_T 0.02: 0.76. When D really matters (zero arm worse by min_B m_{H,B}), P(DEPENDS) = 0.97-0.99, so the label detects arm differences but does not distinguish them from noise.",
+     "fix": "Mechanical, inside owner decision 9 (negative labels still need every arm). Replace the fallback with: if every per-arm label is in {SURVIVES, INCONCLUSIVE}, or every one is in {REVERSED, VANISHES, SHRINKS, INCONCLUSIVE} with at least one INCONCLUSIVE, then INCONCLUSIVE (per-arm: ...). Otherwise `ARMS DISAGREE (gauss: ..., unit: ..., zero: ...)`, worded as 'D init changes the Q3 label', and add 'D-init effect on accuracy: see Q2' with the Q2 labels at that H. Keep the name DEPENDS ON D INIT only if at that H some Q2 contrast is GAUSS BETTER or ZERO BETTER. Add one sentence to \u00a77 quoting the P(DEPENDS | identical arms) figures above."
+    },
+    {
+     "severity": "major",
+     "issue": "There is no fallback if the FREEZE check yields a margin <= 0. The prereg admits this is possible: r2 fairness recalled DLinear H=336 = 0.481, which gives m_{336,DLinear} = -0.003 and makes DLinear the best baseline at H=336, so m_336 = -0.003. Then (a) Q2/Q2b EQUIVALENT and the ', smaller than m_H' sub-labels need a CI inside an empty interval: unreachable by construction. (b) The trigger condition 'Q2 90% hw >= m_H' is always true, so extension fires mechanically. (c) The Q3 rules quantify over 'both B' and 'some B', but \u00a71 makes that B 'non-gating' without saying how the rules, the Bonferroni level or the trigger then treat it.",
+     "evidence": "PREREG \u00a71 lines 28-31 (m_H = margin over best Table 1 baseline; 'If the checked m_{H,B} <= 0 ... non-gating'); \u00a77 rules 1-4 (lines 202-208) and trigger (line 237) reference m_H and every (a,B) without exception.",
+     "fix": "Add to \u00a71: (1) Q3 rules and the trigger range over gating B only. With one gating B, U is the one-sided 95% bound (no Bonferroni) and 'both'/'some' reduce to that B. With none, Q3 at that H is DESCRIPTIVE ONLY. (2) If the checked m_H <= 0, Q2/Q2b at that H use m_H := min over gating B of m_{H,B}; if none is gating, 0.005, stated as audit-chosen. (3) Non-gating pairs are excluded from T."
+    },
+    {
+     "severity": "major",
+     "issue": "The horizon rule does not say what happens when one TFPS arm is BLOCKED. Literally, BLOCKED/SURVIVES/SURVIVES yields 'DEPENDS ON D INIT', which is wrong. A negative is impossible because BLOCKED is not in the negative set, even though the other arms may agree. A BLOCKED tfps_gauss (N(0,1), aux-dominated selection) is a realistic case.",
+     "evidence": "\u00a76 lines 161-162 (Q3 for arm a BLOCKED if a or either baseline is); \u00a77 lines 210-213 (horizon rule lists only REVERSED/VANISHES/SHRINKS as the negative set).",
+     "fix": "Add: if any TFPS arm is BLOCKED at H, the horizon label is `INCOMPLETE (<arm> BLOCKED; others: ...)`. It is neither negative nor positive, in line with owner decision 9's 'every TFPS arm'. If a baseline is BLOCKED, the horizon label is BLOCKED."
+    },
+    {
+     "severity": "minor",
+     "issue": "The extension trigger is close to mechanical but still leaves its inputs open: which TFPS checkpoint (released or pure-val-MSE), which baseline scores (lr-searched or published-lr), whether BLOCKED arms and non-gating pairs count, the df when an se is 0, and that m_{H,B} means the FREEZE-checked values.",
+     "evidence": "\u00a77 lines 235-242: 'reads only per-seed primary scores and computes ... T = [any Q2 contrast with 90% hw >= m_H] OR [any (a, B) with hw_L + hw_U >= m_{H,B}]'.",
+     "fix": "State: T(H) = OR over a in {gauss, unit} of [t_{.95,nu}\u00b7se(a, zero) >= m_H], OR over non-BLOCKED a in {gauss, unit, zero} and gating B of [(t_{.95,nu} + t_{.975,nu})\u00b7se(a, B) >= m_{H,B}]. Here se and nu are Welch-Satterthwaite from released-selection primary scores and lr-searched baseline scores (n = 4 for an arm with one failure). Margins are the FREEZE-checked ones. If se = 0, the width is 0. Expected P(extend) at sigma_T 0.005 is 0.55-0.85 and at sigma_T >= 0.01 is ~1, driven mostly by DLinear at H=192 and Q2 at H=336; budget accordingly."
+    },
+    {
+     "severity": "minor",
+     "issue": "Errors left in the reachability paragraph. (a) The Q2 ', smaller than m_H' sub-labels need a 90% CI inside (0, \u00b1m_H), i.e. 2\u00b7hw_90 < m_H, not hw_L + hw_U < m_{H,B}. (b) NOISE-OFF EQUIVALENT is a paired t (df n-1) on sd_diff, not the Welch threshold. (c) The MC sentence quotes r2-rule numbers. (d) The n=4 (one failure) width is not given.",
+     "evidence": "Recomputed. (a) Q2 sub-label sigma < 0.0047 / 0.0021 (n=5), 0.0071 / 0.0032 (n=10), vs the stated SHRINKS thresholds. (b) Paired hw_90 = 0.953\u00b7sd_diff (n=5) and 0.580\u00b7sd_diff (n=10), so NOISE-OFF EQUIVALENT needs sd_diff < 0.0115 / 0.0052 (n=5) and 0.0190 / 0.0086 (n=10), not 0.0094 / 0.0043. (d) n=5 vs 4: df 6.57, hw_L 1.284 sigma, hw_U 1.608 sigma. sd ratio 0.1 at n=10: df 9.18, hw_L 0.581, hw_U 0.717 sigma_T.",
+     "fix": "Replace the three lines with the numbers above, and swap in the r3 MC figures from this file's simulations key."
+    },
+    {
+     "severity": "minor",
+     "issue": "Two things in the qualifiers are undefined or asymmetric. 'If it does not hold there' (published lr) does not say what 'hold' means: does REVERSED -> VANISHES hold? In Q3 the SELECTION-SENSITIVE qualifier is attached only to negative horizon labels, while Q2 applies it to every label. A SURVIVES that depends on aux-dominated checkpoint selection would go unflagged. Item-level 'same horizon label' is also undefined for parameterised labels (DEPENDS/ARMS DISAGREE with different per-arm contents).",
+     "evidence": "\u00a77 lines 214-218, 183-184, 218.",
+     "fix": "Define 'holds' as: the published-lr horizon label, computed by the same three-arm rule, is the same label or a more negative one (REVERSED < VANISHES < SHRINKS). Apply the (ii) selection qualifier to every Q3 horizon label, including SURVIVES. Item level compares the label name only, with per-arm contents printed."
+    },
+    {
+     "severity": "minor",
+     "issue": "Q2's gating Welch test ignores the pre-registered pairing: arms share non-D init, data order and noise stream by construction. If D has little effect, the within-seed correlation is high and Welch is conservative in both directions. Under rho = 0.9 the false GAUSS/ZERO BETTER rate is ~0.00 and EQUIVALENT power drops less than it would under independence (H=336, sigma 0.005: EQUIVALENT 0.68 vs 0.34 at rho 0). The effect is symmetric, so no verdict is biased. It costs power only and is already disclosed (paired reported, non-gating).",
+     "evidence": "Simulations key, Q2_gauss_vs_zero columns, rho 0 vs 0.9.",
+     "fix": "Optional: keep as is and add 'Welch is conservative under the shared-seed pairing'. Or make the paired CI gating for Q2, a pre-FREEZE choice. Also state whether Q2b uses n = 10 when the extension fires (it should, with the same seeds)."
+    },
+    {
+     "severity": "minor",
+     "issue": "The failed-run suffix is written only for a single failure. After extension, n = 10 with 2 failures is allowed.",
+     "evidence": "\u00a76 lines 163-164.",
+     "fix": "'\u2014 k FAILED RUN(S) IN <arm>'; the sensitivity scores every failed seed as that arm's worst observed seed."
+    }
+   ],
+   "simulations": {
+    "method": "Normal per-seed scores, 20000 replicates per cell (40000 for the bound-level rates); scripts in the session scratchpad (not committed). Baselines B: mean = g\u00b7m_{H,B} above the TFPS arms (g = 0, 0.5, 1), sd PatchTST 0.003, DLinear 0.0005 (near-deterministic) or 0.002. Three TFPS arms with equal true means, seed sd sigma_T in {0.002, 0.005, 0.01, 0.02}, within-seed correlation rho in {0, 0.9}. Margins: m_{192,P} 0.037, m_{192,D} 0.011, m_{336,P} 0.013, m_{336,D} 0.015, Q2 m_192 0.011, m_336 0.005. Per-arm Q3 rules 1-5 exactly as \u00a77 (L one-sided 95%, U one-sided 97.5%, Welch-Satterthwaite), horizon rule as owner decision 9 (\u00a77 lines 210-213), extension trigger T exactly as \u00a77 lines 237 (2 Q2 contrasts + 6 (a,B) pairs), then the rules once at n=10. DLinear sd 0.002 results are within ~0.01 of sd 0.0005 and are omitted from the table.",
+    "arithmetic": {
+     "n5_equal": "df 8.00, t.95 1.8595, t.975 2.3060, hw_L 1.1761\u03c3, hw_U 1.4584\u03c3, sum 2.6345\u03c3",
+     "n5_ratio0.1": "df 4.08, t.95 2.1199, t.975 2.7551, hw_L 0.9528\u03c3_T, hw_U 1.2383\u03c3_T",
+     "n10_equal": "df 18, t.95 1.7341, t.975 2.1009, hw_L 0.7755\u03c3, hw_U 0.9396\u03c3, sum 1.7151\u03c3",
+     "n10_ratio0.1": "df 9.18, hw_L 0.5813\u03c3_T, hw_U 0.7168\u03c3_T",
+     "n5_vs_n4": "df 6.57, hw_L 1.2836\u03c3, hw_U 1.6077\u03c3",
+     "SHRINKS_sigma_n5": "P 0.0140/0.0049, D 0.0042/0.0057 (H192/336)",
+     "SHRINKS_sigma_n10": "P 0.0216/0.0076, D 0.0064/0.0087",
+     "SHRINKS_sigma_n5_ratio0.1": "P 0.0169/0.0059, D 0.0050/0.0069",
+     "Q2_EQUIV_sigma": "n5 0.0094/0.0043, n10 0.0142/0.0064",
+     "Q2_sublabel_sigma": "n5 0.0047/0.0021, n10 0.0071/0.0032",
+     "Q2b_EQUIV_sd_diff": "n5 0.0115/0.0052, n10 0.0190/0.0086",
+     "margins_from_extract": "m_{192,P}=0.460-0.423=0.037, m_{192,D}=0.434-0.423=0.011, m_{336,P}=0.497-0.484=0.013, m_{336,D}=0.499-0.484=0.015, m_192=0.011 (DLinear), m_336=0.005 (FITS 0.489): all match \u00a71"
+    },
+    "Q3_table_sD_0.0005": {
+     "H192 sT=0.002 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.00 | horizon: VAN 0.96 SHR 0.03 | arm tfps_gauss: REV 0.04 VAN 0.95 SHR 0.01 | Q2 gauss-vs-zero: GB 0.04 ZB 0.05 EQ 0.91",
+     "H192 sT=0.002 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.00 | horizon: SHR 1.00 | arm tfps_gauss: SHR 1.00 | Q2 gauss-vs-zero: GB 0.04 ZB 0.05 EQ 0.91",
+     "H192 sT=0.002 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.00 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.91",
+     "H192 sT=0.002 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.00 | horizon: REV 0.02 VAN 0.96 SHR 0.02 | arm tfps_gauss: REV 0.04 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.002 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.00 | horizon: SHR 1.00 | arm tfps_gauss: SHR 1.00 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.002 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.00 | horizon: SHR 0.02 SURV 0.93 DEP 0.05 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.005 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.78 | horizon: VAN 0.91 SHR 0.09 | arm tfps_gauss: REV 0.04 VAN 0.93 SHR 0.03 | Q2 gauss-vs-zero: GB 0.06 ZB 0.05 EQ 0.89",
+     "H192 sT=0.005 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.78 | horizon: SHR 1.00 | arm tfps_gauss: VAN 0.10 SHR 0.90 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.89",
+     "H192 sT=0.005 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.78 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.90",
+     "H192 sT=0.005 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.55 | horizon: REV 0.02 VAN 0.93 SHR 0.06 | arm tfps_gauss: REV 0.04 VAN 0.92 SHR 0.03 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.005 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.55 | horizon: VAN 0.06 SHR 0.94 | arm tfps_gauss: VAN 0.12 SHR 0.88 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.005 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.55 | horizon: SHR 0.02 SURV 0.93 DEP 0.06 | arm tfps_gauss: SHR 0.04 SURV 0.95 | Q2 gauss-vs-zero: EQ 1.00",
+     "H192 sT=0.01 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.88 SHR 0.11 DEP 0.01 | arm tfps_gauss: REV 0.03 VAN 0.93 SHR 0.04 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.52 INC 0.38",
+     "H192 sT=0.01 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.02 SHR 0.42 INC 0.01 DEP 0.55 | arm tfps_gauss: VAN 0.28 SHR 0.48 INC 0.24 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.53 INC 0.38",
+     "H192 sT=0.01 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.79 DEP 0.21 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.92 INC 0.05 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.52 INC 0.38",
+     "H192 sT=0.01 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.98 | horizon: REV 0.01 VAN 0.91 SHR 0.06 DEP 0.01 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+     "H192 sT=0.01 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.98 | horizon: VAN 0.18 SHR 0.44 INC 0.12 DEP 0.26 | arm tfps_gauss: VAN 0.27 SHR 0.48 INC 0.24 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+     "H192 sT=0.01 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.98 | horizon: SHR 0.01 SURV 0.87 INC 0.02 DEP 0.10 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.92 INC 0.05 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+     "H192 sT=0.02 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.86 SHR 0.12 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H192 sT=0.02 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.01 SHR 0.01 INC 0.21 DEP 0.76 | arm tfps_gauss: VAN 0.20 SHR 0.08 SURV 0.12 INC 0.59 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H192 sT=0.02 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.11 INC 0.11 DEP 0.77 | arm tfps_gauss: VAN 0.03 SURV 0.49 INC 0.49 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H192 sT=0.02 sD=0.0005 rho=0.9 gain=0": "P(extend) 1.00 | horizon: REV 0.01 VAN 0.91 SHR 0.07 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+     "H192 sT=0.02 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.13 SHR 0.02 SURV 0.07 INC 0.43 DEP 0.35 | arm tfps_gauss: VAN 0.20 SHR 0.08 SURV 0.12 INC 0.60 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+     "H192 sT=0.02 sD=0.0005 rho=0.9 gain=m": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.38 INC 0.36 DEP 0.26 | arm tfps_gauss: VAN 0.02 SURV 0.49 INC 0.48 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+     "H336 sT=0.002 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.00 | horizon: REV 0.01 VAN 0.96 SHR 0.03 | arm tfps_gauss: REV 0.05 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.04 EQ 0.87 INC 0.04",
+     "H336 sT=0.002 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.00 | horizon: VAN 0.01 SHR 0.99 | arm tfps_gauss: VAN 0.03 SHR 0.97 | Q2 gauss-vs-zero: GB 0.05 ZB 0.04 EQ 0.87 INC 0.04",
+     "H336 sT=0.002 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.00 | horizon: SURV 0.88 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.95 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.87 INC 0.04",
+     "H336 sT=0.002 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.01 | horizon: REV 0.02 VAN 0.96 SHR 0.02 | arm tfps_gauss: REV 0.04 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: EQ 1.00",
+     "H336 sT=0.002 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.01 | horizon: VAN 0.02 SHR 0.98 | arm tfps_gauss: VAN 0.03 SHR 0.97 | Q2 gauss-vs-zero: EQ 1.00",
+     "H336 sT=0.002 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.01 | horizon: SHR 0.02 SURV 0.93 DEP 0.05 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 1.00",
+     "H336 sT=0.005 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.85 | horizon: VAN 0.92 SHR 0.08 | arm tfps_gauss: REV 0.04 VAN 0.93 SHR 0.03 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.34 INC 0.55",
+     "H336 sT=0.005 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.85 | horizon: SHR 0.93 DEP 0.07 | arm tfps_gauss: VAN 0.07 SHR 0.91 SURV 0.02 | Q2 gauss-vs-zero: GB 0.05 ZB 0.06 EQ 0.34 INC 0.56",
+     "H336 sT=0.005 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.84 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.06 ZB 0.06 EQ 0.34 INC 0.55",
+     "H336 sT=0.005 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.65 | horizon: REV 0.02 VAN 0.92 SHR 0.06 | arm tfps_gauss: REV 0.05 VAN 0.92 SHR 0.04 | Q2 gauss-vs-zero: EQ 0.68 INC 0.31",
+     "H336 sT=0.005 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.65 | horizon: VAN 0.05 SHR 0.89 SURV 0.01 DEP 0.05 | arm tfps_gauss: VAN 0.09 SHR 0.88 SURV 0.03 | Q2 gauss-vs-zero: EQ 0.68 INC 0.32",
+     "H336 sT=0.005 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.65 | horizon: SHR 0.02 SURV 0.93 DEP 0.06 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 0.68 INC 0.32",
+     "H336 sT=0.01 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.87 SHR 0.09 DEP 0.04 | arm tfps_gauss: REV 0.03 VAN 0.93 SHR 0.03 SURV 0.01 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.01 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.04 SHR 0.14 SURV 0.04 DEP 0.78 | arm tfps_gauss: VAN 0.33 SHR 0.22 SURV 0.35 INC 0.09 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.01 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.87 DEP 0.13 | arm tfps_gauss: VAN 0.01 SHR 0.03 SURV 0.95 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.01 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.98 | horizon: REV 0.01 VAN 0.91 SHR 0.06 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+     "H336 sT=0.01 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.98 | horizon: VAN 0.23 SHR 0.20 SURV 0.24 INC 0.03 DEP 0.29 | arm tfps_gauss: VAN 0.33 SHR 0.23 SURV 0.34 INC 0.09 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+     "H336 sT=0.01 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.98 | horizon: SHR 0.01 SURV 0.92 DEP 0.06 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.95 INC 0.01 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+     "H336 sT=0.02 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.17 INC 0.07 DEP 0.76 | arm tfps_gauss: REV 0.03 VAN 0.53 SURV 0.04 INC 0.40 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.02 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.01 INC 0.20 DEP 0.78 | arm tfps_gauss: VAN 0.18 SURV 0.24 INC 0.58 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.02 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.20 INC 0.06 DEP 0.74 | arm tfps_gauss: VAN 0.03 SURV 0.59 INC 0.38 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+     "H336 sT=0.02 sD=0.0005 rho=0.9 gain=0": "P(extend) 1.00 | horizon: REV 0.01 VAN 0.43 SURV 0.02 INC 0.26 DEP 0.27 | arm tfps_gauss: REV 0.03 VAN 0.54 SURV 0.04 INC 0.39 | Q2 gauss-vs-zero: INC 1.00",
+     "H336 sT=0.02 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.11 SURV 0.15 INC 0.41 DEP 0.32 | arm tfps_gauss: VAN 0.18 SURV 0.24 INC 0.57 | Q2 gauss-vs-zero: INC 1.00",
+     "H336 sT=0.02 sD=0.0005 rho=0.9 gain=m": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.48 INC 0.25 DEP 0.25 | arm tfps_gauss: VAN 0.03 SURV 0.59 INC 0.38 | Q2 gauss-vs-zero: INC 1.00"
+    },
+    "bound_level_error_rates_with_and_without_extension": {
+     "H192 sT=0.005 sD=0.0005 ext=False": {
+      "P_extend": 0.0,
+      "gain0_P_L_gt0_PatchTST": 0.0486,
+      "gain0_P_L_gt0_DLinear": 0.0525,
+      "gainm_P_U_lt_m_PatchTST": 0.0244,
+      "gainm_P_U_lt_m_DLinear": 0.0267,
+      "gainm_P_U_lt_m_either": 0.038
+     },
+     "H192 sT=0.005 sD=0.0005 ext=True": {
+      "P_extend": 0.787,
+      "gain0_P_L_gt0_PatchTST": 0.0521,
+      "gain0_P_L_gt0_DLinear": 0.0512,
+      "gainm_P_U_lt_m_PatchTST": 0.0253,
+      "gainm_P_U_lt_m_DLinear": 0.027,
+      "gainm_P_U_lt_m_either": 0.0386
+     },
+     "H192 sT=0.01 sD=0.0005 ext=False": {
+      "P_extend": 0.0,
+      "gain0_P_L_gt0_PatchTST": 0.0538,
+      "gain0_P_L_gt0_DLinear": 0.0515,
+      "gainm_P_U_lt_m_PatchTST": 0.027,
+      "gainm_P_U_lt_m_DLinear": 0.0255,
+      "gainm_P_U_lt_m_either": 0.0323
+     },
+     "H192 sT=0.01 sD=0.0005 ext=True": {
+      "P_extend": 0.999,
+      "gain0_P_L_gt0_PatchTST": 0.0505,
+      "gain0_P_L_gt0_DLinear": 0.0496,
+      "gainm_P_U_lt_m_PatchTST": 0.026,
+      "gainm_P_U_lt_m_DLinear": 0.0242,
+      "gainm_P_U_lt_m_either": 0.0312
+     },
+     "H336 sT=0.005 sD=0.0005 ext=False": {
+      "P_extend": 0.0,
+      "gain0_P_L_gt0_PatchTST": 0.0502,
+      "gain0_P_L_gt0_DLinear": 0.0516,
+      "gainm_P_U_lt_m_PatchTST": 0.0237,
+      "gainm_P_U_lt_m_DLinear": 0.0262,
+      "gainm_P_U_lt_m_either": 0.0372
+     },
+     "H336 sT=0.005 sD=0.0005 ext=True": {
+      "P_extend": 0.848,
+      "gain0_P_L_gt0_PatchTST": 0.0531,
+      "gain0_P_L_gt0_DLinear": 0.0529,
+      "gainm_P_U_lt_m_PatchTST": 0.0253,
+      "gainm_P_U_lt_m_DLinear": 0.0252,
+      "gainm_P_U_lt_m_either": 0.0378
+     },
+     "H336 sT=0.01 sD=0.0005 ext=False": {
+      "P_extend": 0.0,
+      "gain0_P_L_gt0_PatchTST": 0.0495,
+      "gain0_P_L_gt0_DLinear": 0.0482,
+      "gainm_P_U_lt_m_PatchTST": 0.0263,
+      "gainm_P_U_lt_m_DLinear": 0.0251,
+      "gainm_P_U_lt_m_either": 0.0319
+     },
+     "H336 sT=0.01 sD=0.0005 ext=True": {
+      "P_extend": 1.0,
+      "gain0_P_L_gt0_PatchTST": 0.0506,
+      "gain0_P_L_gt0_DLinear": 0.0503,
+      "gainm_P_U_lt_m_PatchTST": 0.0262,
+      "gainm_P_U_lt_m_DLinear": 0.0254,
+      "gainm_P_U_lt_m_either": 0.0323
+     }
+    },
+    "D_init_really_matters": {
+     "H192 sT=0.002 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.0,
+      "horizon": "SHR 0.01 DEP 0.99",
+      "arm_gauss": "SHR 0.04 SURV 0.95"
+     },
+     "H192 sT=0.005 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.72,
+      "horizon": "SHR 0.01 DEP 0.99",
+      "arm_gauss": "SHR 0.04 SURV 0.96"
+     },
+     "H192 sT=0.01 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.998,
+      "horizon": "SURV 0.03 DEP 0.97",
+      "arm_gauss": "VAN 0.01 SHR 0.02 SURV 0.93 INC 0.04"
+     },
+     "H336 sT=0.002 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.004,
+      "horizon": "SHR 0.01 DEP 0.98",
+      "arm_gauss": "SHR 0.04 SURV 0.95"
+     },
+     "H336 sT=0.005 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.792,
+      "horizon": "SHR 0.01 DEP 0.99",
+      "arm_gauss": "SHR 0.04 SURV 0.96"
+     },
+     "H336 sT=0.01 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+      "P_extend": 0.999,
+      "horizon": "SHR 0.01 SURV 0.01 DEP 0.98",
+      "arm_gauss": "VAN 0.01 SHR 0.03 SURV 0.95 INC 0.02"
+     }
+    },
+    "headlines": [
+     "Per-arm false exclusion of a true claim (gain = m): P(SHRINKS or VANISHES or REVERSED) 0.04-0.05 at sigma_T <= 0.01; horizon-level negative 0.00-0.03.",
+     "False positive (gain = 0): per-arm SURVIVES <= 0.01 except H=336 sigma_T 0.02 (0.04); horizon SURVIVES <= 0.02.",
+     "Both directions reachable: gain = 0 -> horizon VANISHES 0.86-0.98 for sigma_T <= 0.01; gain = m -> SURVIVES 0.78-0.94 for sigma_T <= 0.01; gain = m/2 -> SHRINKS 0.88-1.00 for sigma_T <= 0.005.",
+     "At sigma_T 0.02 (H=336) or gain = m/2 with sigma_T 0.01, DEPENDS ON D INIT is the modal horizon label even though arms are identical (0.26-0.79).",
+     "Extension type-I inflation per one-sided bound <= ~0.4 pp (0.049-0.054 with vs 0.048-0.054 without); the prereg's 0.5-1 pp is a safe upper statement.",
+     "P(extend): sigma_T 0.002 ~0.00; 0.005 0.55-0.85; >= 0.01 0.98-1.00."
+    ]
+   },
+   "summary": "Every number in the \u00a77 reachability paragraph recomputes correctly for Q3. Bonferroni-on-U / IU-on-L brings the some-B negatives to <=5% (sim 3-4%). Both verdict directions are reachable for sigma_T <= ~0.01, and the extension trigger's type-I cost is under 0.5 pp. Three major issues, each with a mechanical fix. (1) The three-arm fallback 'DEPENDS ON D INIT' fires 9-79% when the arms are identical, so it asserts an untested D effect. Relabel it and route agree-or-inconclusive mixes to INCONCLUSIVE. (2) No fallback if the FREEZE check gives m <= 0: Q2 EQUIVALENT becomes unreachable and the trigger always fires. (3) A BLOCKED arm is unhandled in the horizon rule. Minor: trigger inputs, Q2 sub-label/Q2b thresholds, qualifier definitions."
+  }
+ ]
+}

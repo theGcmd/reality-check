@@ -54,3 +54,23 @@
 ## Next
 - BLOCKED on Gustav: D scale decision + paper access (DIGEST 2026-11-25). Then step (b) round 3 of max 3: r3 rewrite +
   review. If r3 is not licensed, item goes BLOCKED with reasons per protocol.
+
+## 2026-11-27 ~03:12-04:00 UTC — step (b) r3: prereg r3 + design review round 3 → LICENSED_WITH_FIXES
+- PREREG.md r3 (commit bc7055d): arms tfps_gauss N(0,1), tfps_gauss_unit N(0,1/112) (owner 9), tfps_zero, eval-only
+  nonoise for both Gaussian arms, routing measurement; D from dedicated generators; K=5 eval-noise draws averaged;
+  per-baseline margins m_{H,B} from PAPER_EXTRACT [E] (192: P 0.037, D 0.011; 336: P 0.013, D 0.015); Bonferroni
+  97.5% upper bounds; three-arm horizon rule (owner 9); published-lr table + qualifier (owner 11); pure-val-MSE
+  SELECTION-SENSITIVE suffix; exact extension trigger script; failed/BLOCKED rules; all r2 engineering fixes.
+- Review r3 (`_design_review_r3.json`, raw lenses `_r3/`): foregone, fairness, leakage, statistics, answer_built_in
+  (Fable) all LICENSED_WITH_FIXES, 0 blocking. Foregone probe: tfps_gauss_unit routes like zero at init
+  (A 0.2516/0.2505, s row range 0.005/0.008) → its Q2 likely EQUIVALENT/INCONCLUSIVE (not certain).
+- 0 runs scored. Nothing frozen.
+
+## Next
+1. Apply the r3 fixes in `_design_review_r3.json` → `fixes_before_freeze` mechanically (no new review round).
+   Note: the DEPENDS ON D INIT label is renamed (logic of owner decision 9 unchanged).
+2. Step (c): wrappers + self-tests + timing smoke on a seed outside S and the extension seeds, test lines filtered.
+3. Step (d) FREEZE only after the Table 1 PDF check (headers + full H=192/336 rows) is recorded in PAPER_EXTRACT.md.
+
+## Patches in force
+- None used for scoring. Planned patches listed in PREREG.md §8.

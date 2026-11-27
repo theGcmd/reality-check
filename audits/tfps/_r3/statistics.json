@@ -1,0 +1,283 @@
+{
+ "lens": "statistics",
+ "model": "this session's model",
+ "round": 3,
+ "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+ "verdict": "LICENSED_WITH_FIXES",
+ "r2_issues_status": [
+  {
+   "issue": "r2-1 reachability paragraph wrong for SHRINKS / unequal variances",
+   "fixed": "partly",
+   "note": "Every Q3 number in the r3 paragraph recomputes correctly: Welch-Satterthwaite df 8.00 / 4.08 / 18.00; t.95 1.8595 / 2.1199 / 1.7341; t.975 2.3060 / 2.7551 / 2.1009; hw_L 1.176 / 0.953 / 0.775 sigma; hw_U 1.458 / 1.238 / 0.940 sigma; SHRINKS sigma < m/2.635 -> PatchTST 0.0140 / 0.0049, DLinear 0.0042 / 0.0057; n=10 m/1.715 -> 0.0216 / 0.0076, 0.0064 / 0.0087; Q2 EQUIVALENT 0.0094 / 0.0043 (n=5), 0.0142 / 0.0064 (n=10). Still wrong: the Q2 ', smaller than m_H' sub-labels and NOISE-OFF EQUIVALENT are given the wrong thresholds, and the Monte Carlo sentence quotes r2-rule figures (see issues)."
+  },
+  {
+   "issue": "r2-2 extension trigger not an exact formula",
+   "fixed": "partly",
+   "note": "Now a formula, computed by a committed script from widths only, committed before any label is printed, with Q2b excluded and n=4 handled. Four inputs are still unspecified: which selection, which baseline table, BLOCKED arms, and non-gating (H,B) pairs (see issues)."
+  },
+  {
+   "issue": "r2-3 union over two baselines inflates the 'some B' negatives",
+   "fixed": "yes",
+   "note": "U is now the one-sided 97.5% bound (Bonferroni) and L stays at 95% (intersection-union). Simulated with true gain = m for both B: P(U_B < m for either B) = 0.031-0.039 (was 0.082). With true gain 0: P(L > 0) = 0.048-0.054 per baseline."
+  },
+  {
+   "issue": "r2-4 failed-run rule",
+   "fixed": "yes",
+   "note": "Adds the suffix, the worst-seed sensitivity, BLOCKED at >=2/5 or >=3/10, the lr-grid rule, and Q2/Q3 BLOCKED propagation. Small gaps: the suffix text covers only '1 FAILED RUN', and the three-arm horizon rule has no case for a BLOCKED arm (see issues)."
+  },
+  {
+   "issue": "r2-5 VANISHES/SURVIVES wording overclaims",
+   "fixed": "yes",
+   "note": "Labels are now defined in words, and the point estimate and CI are printed with every label. The supporting MC numbers are stale (r2 rules). The r3 rules give these rates at true gain m/2: per-arm VANISHES 0.07-0.34; horizon-level VANISHES 0.00-0.23."
+  },
+  {
+   "issue": "r2-6 A<0.30 qualifier ambiguous",
+   "fixed": "yes",
+   "note": "Per router, per arm a in {1,2}, with the ceiling and the distribution across seeds printed. Arm-3 tie-break documented."
+  },
+  {
+   "issue": "r2-7 Q2 asymmetry, no rule 0, no item level",
+   "fixed": "yes",
+   "note": "Both sub-labels, rule 0 (BLOCKED / PREMISE FAILED), and item level for Q2, Q2b and Q3."
+  },
+  {
+   "issue": "r2-8 single best-baseline margin m_H used for both baselines",
+   "fixed": "yes",
+   "note": "Superseded: Q3 now uses per-baseline m_{H,B}, recomputed from the extract: 0.037, 0.011, 0.013, 0.015; m_192 = 0.011, m_336 = 0.005 (best: DLinear 0.434, FITS 0.489). See the new issue on m <= 0 after the FREEZE check."
+  },
+  {
+   "issue": "r2-9 per-seed score, float64, seed-only CIs",
+   "fixed": "yes",
+   "note": "Stated. K=5 eval-draw averaging is pre-chosen."
+  },
+  {
+   "issue": "r2-10 Q2b pairing / anchor interval",
+   "fixed": "yes",
+   "note": "Paired t for Q2b; anchor uses a single-run prediction interval."
+  }
+ ],
+ "issues": [
+  {
+   "severity": "major",
+   "issue": "The three-arm horizon rule's fallback label 'DEPENDS ON D INIT' fires often when D init makes no difference, so it asserts an effect no test has shown. Any disagreement among the per-arm labels produces it, for example SURVIVES/SURVIVES/SHRINKS from sampling noise or VANISHES/VANISHES/INCONCLUSIVE. Per-arm labels are thresholded and the arms are noisy, so three arms with identical true accuracy often disagree. At large TFPS seed sd this label, not INCONCLUSIVE, becomes the modal outcome.",
+   "evidence": "Monte Carlo (simulations key), all three arms with the same true mean. True gain = m: P(DEPENDS) = 0.09-0.13 even at sigma_T = 0.002 (rho 0; 0.04-0.06 at rho 0.9). It is 0.11-0.22 at sigma_T 0.005-0.01, and 0.73-0.77 at sigma_T 0.02 (rho 0). True gain = m/2: 0.55 at H=192 and 0.78 at H=336 at sigma_T 0.01 (rho 0). True gain = 0, H=336, sigma_T 0.02: 0.76. When D really matters (zero arm worse by min_B m_{H,B}), P(DEPENDS) = 0.97-0.99, so the label detects arm differences but does not distinguish them from noise.",
+   "fix": "Mechanical, inside owner decision 9 (negative labels still need every arm). Replace the fallback with: if every per-arm label is in {SURVIVES, INCONCLUSIVE}, or every one is in {REVERSED, VANISHES, SHRINKS, INCONCLUSIVE} with at least one INCONCLUSIVE, then INCONCLUSIVE (per-arm: ...). Otherwise `ARMS DISAGREE (gauss: ..., unit: ..., zero: ...)`, worded as 'D init changes the Q3 label', and add 'D-init effect on accuracy: see Q2' with the Q2 labels at that H. Keep the name DEPENDS ON D INIT only if at that H some Q2 contrast is GAUSS BETTER or ZERO BETTER. Add one sentence to §7 quoting the P(DEPENDS | identical arms) figures above."
+  },
+  {
+   "severity": "major",
+   "issue": "There is no fallback if the FREEZE check yields a margin <= 0. The prereg admits this is possible: r2 fairness recalled DLinear H=336 = 0.481, which gives m_{336,DLinear} = -0.003 and makes DLinear the best baseline at H=336, so m_336 = -0.003. Then (a) Q2/Q2b EQUIVALENT and the ', smaller than m_H' sub-labels need a CI inside an empty interval: unreachable by construction. (b) The trigger condition 'Q2 90% hw >= m_H' is always true, so extension fires mechanically. (c) The Q3 rules quantify over 'both B' and 'some B', but §1 makes that B 'non-gating' without saying how the rules, the Bonferroni level or the trigger then treat it.",
+   "evidence": "PREREG §1 lines 28-31 (m_H = margin over best Table 1 baseline; 'If the checked m_{H,B} <= 0 ... non-gating'); §7 rules 1-4 (lines 202-208) and trigger (line 237) reference m_H and every (a,B) without exception.",
+   "fix": "Add to §1: (1) Q3 rules and the trigger range over gating B only. With one gating B, U is the one-sided 95% bound (no Bonferroni) and 'both'/'some' reduce to that B. With none, Q3 at that H is DESCRIPTIVE ONLY. (2) If the checked m_H <= 0, Q2/Q2b at that H use m_H := min over gating B of m_{H,B}; if none is gating, 0.005, stated as audit-chosen. (3) Non-gating pairs are excluded from T."
+  },
+  {
+   "severity": "major",
+   "issue": "The horizon rule does not say what happens when one TFPS arm is BLOCKED. Literally, BLOCKED/SURVIVES/SURVIVES yields 'DEPENDS ON D INIT', which is wrong. A negative is impossible because BLOCKED is not in the negative set, even though the other arms may agree. A BLOCKED tfps_gauss (N(0,1), aux-dominated selection) is a realistic case.",
+   "evidence": "§6 lines 161-162 (Q3 for arm a BLOCKED if a or either baseline is); §7 lines 210-213 (horizon rule lists only REVERSED/VANISHES/SHRINKS as the negative set).",
+   "fix": "Add: if any TFPS arm is BLOCKED at H, the horizon label is `INCOMPLETE (<arm> BLOCKED; others: ...)`. It is neither negative nor positive, in line with owner decision 9's 'every TFPS arm'. If a baseline is BLOCKED, the horizon label is BLOCKED."
+  },
+  {
+   "severity": "minor",
+   "issue": "The extension trigger is close to mechanical but still leaves its inputs open: which TFPS checkpoint (released or pure-val-MSE), which baseline scores (lr-searched or published-lr), whether BLOCKED arms and non-gating pairs count, the df when an se is 0, and that m_{H,B} means the FREEZE-checked values.",
+   "evidence": "§7 lines 235-242: 'reads only per-seed primary scores and computes ... T = [any Q2 contrast with 90% hw >= m_H] OR [any (a, B) with hw_L + hw_U >= m_{H,B}]'.",
+   "fix": "State: T(H) = OR over a in {gauss, unit} of [t_{.95,nu}·se(a, zero) >= m_H], OR over non-BLOCKED a in {gauss, unit, zero} and gating B of [(t_{.95,nu} + t_{.975,nu})·se(a, B) >= m_{H,B}]. Here se and nu are Welch-Satterthwaite from released-selection primary scores and lr-searched baseline scores (n = 4 for an arm with one failure). Margins are the FREEZE-checked ones. If se = 0, the width is 0. Expected P(extend) at sigma_T 0.005 is 0.55-0.85 and at sigma_T >= 0.01 is ~1, driven mostly by DLinear at H=192 and Q2 at H=336; budget accordingly."
+  },
+  {
+   "severity": "minor",
+   "issue": "Errors left in the reachability paragraph. (a) The Q2 ', smaller than m_H' sub-labels need a 90% CI inside (0, ±m_H), i.e. 2·hw_90 < m_H, not hw_L + hw_U < m_{H,B}. (b) NOISE-OFF EQUIVALENT is a paired t (df n-1) on sd_diff, not the Welch threshold. (c) The MC sentence quotes r2-rule numbers. (d) The n=4 (one failure) width is not given.",
+   "evidence": "Recomputed. (a) Q2 sub-label sigma < 0.0047 / 0.0021 (n=5), 0.0071 / 0.0032 (n=10), vs the stated SHRINKS thresholds. (b) Paired hw_90 = 0.953·sd_diff (n=5) and 0.580·sd_diff (n=10), so NOISE-OFF EQUIVALENT needs sd_diff < 0.0115 / 0.0052 (n=5) and 0.0190 / 0.0086 (n=10), not 0.0094 / 0.0043. (d) n=5 vs 4: df 6.57, hw_L 1.284 sigma, hw_U 1.608 sigma. sd ratio 0.1 at n=10: df 9.18, hw_L 0.581, hw_U 0.717 sigma_T.",
+   "fix": "Replace the three lines with the numbers above, and swap in the r3 MC figures from this file's simulations key."
+  },
+  {
+   "severity": "minor",
+   "issue": "Two things in the qualifiers are undefined or asymmetric. 'If it does not hold there' (published lr) does not say what 'hold' means: does REVERSED -> VANISHES hold? In Q3 the SELECTION-SENSITIVE qualifier is attached only to negative horizon labels, while Q2 applies it to every label. A SURVIVES that depends on aux-dominated checkpoint selection would go unflagged. Item-level 'same horizon label' is also undefined for parameterised labels (DEPENDS/ARMS DISAGREE with different per-arm contents).",
+   "evidence": "§7 lines 214-218, 183-184, 218.",
+   "fix": "Define 'holds' as: the published-lr horizon label, computed by the same three-arm rule, is the same label or a more negative one (REVERSED < VANISHES < SHRINKS). Apply the (ii) selection qualifier to every Q3 horizon label, including SURVIVES. Item level compares the label name only, with per-arm contents printed."
+  },
+  {
+   "severity": "minor",
+   "issue": "Q2's gating Welch test ignores the pre-registered pairing: arms share non-D init, data order and noise stream by construction. If D has little effect, the within-seed correlation is high and Welch is conservative in both directions. Under rho = 0.9 the false GAUSS/ZERO BETTER rate is ~0.00 and EQUIVALENT power drops less than it would under independence (H=336, sigma 0.005: EQUIVALENT 0.68 vs 0.34 at rho 0). The effect is symmetric, so no verdict is biased. It costs power only and is already disclosed (paired reported, non-gating).",
+   "evidence": "Simulations key, Q2_gauss_vs_zero columns, rho 0 vs 0.9.",
+   "fix": "Optional: keep as is and add 'Welch is conservative under the shared-seed pairing'. Or make the paired CI gating for Q2, a pre-FREEZE choice. Also state whether Q2b uses n = 10 when the extension fires (it should, with the same seeds)."
+  },
+  {
+   "severity": "minor",
+   "issue": "The failed-run suffix is written only for a single failure. After extension, n = 10 with 2 failures is allowed.",
+   "evidence": "§6 lines 163-164.",
+   "fix": "'— k FAILED RUN(S) IN <arm>'; the sensitivity scores every failed seed as that arm's worst observed seed."
+  }
+ ],
+ "simulations": {
+  "method": "Normal per-seed scores, 20000 replicates per cell (40000 for the bound-level rates); scripts in the session scratchpad (not committed). Baselines B: mean = g·m_{H,B} above the TFPS arms (g = 0, 0.5, 1), sd PatchTST 0.003, DLinear 0.0005 (near-deterministic) or 0.002. Three TFPS arms with equal true means, seed sd sigma_T in {0.002, 0.005, 0.01, 0.02}, within-seed correlation rho in {0, 0.9}. Margins: m_{192,P} 0.037, m_{192,D} 0.011, m_{336,P} 0.013, m_{336,D} 0.015, Q2 m_192 0.011, m_336 0.005. Per-arm Q3 rules 1-5 exactly as §7 (L one-sided 95%, U one-sided 97.5%, Welch-Satterthwaite), horizon rule as owner decision 9 (§7 lines 210-213), extension trigger T exactly as §7 lines 237 (2 Q2 contrasts + 6 (a,B) pairs), then the rules once at n=10. DLinear sd 0.002 results are within ~0.01 of sd 0.0005 and are omitted from the table.",
+  "arithmetic": {
+   "n5_equal": "df 8.00, t.95 1.8595, t.975 2.3060, hw_L 1.1761σ, hw_U 1.4584σ, sum 2.6345σ",
+   "n5_ratio0.1": "df 4.08, t.95 2.1199, t.975 2.7551, hw_L 0.9528σ_T, hw_U 1.2383σ_T",
+   "n10_equal": "df 18, t.95 1.7341, t.975 2.1009, hw_L 0.7755σ, hw_U 0.9396σ, sum 1.7151σ",
+   "n10_ratio0.1": "df 9.18, hw_L 0.5813σ_T, hw_U 0.7168σ_T",
+   "n5_vs_n4": "df 6.57, hw_L 1.2836σ, hw_U 1.6077σ",
+   "SHRINKS_sigma_n5": "P 0.0140/0.0049, D 0.0042/0.0057 (H192/336)",
+   "SHRINKS_sigma_n10": "P 0.0216/0.0076, D 0.0064/0.0087",
+   "SHRINKS_sigma_n5_ratio0.1": "P 0.0169/0.0059, D 0.0050/0.0069",
+   "Q2_EQUIV_sigma": "n5 0.0094/0.0043, n10 0.0142/0.0064",
+   "Q2_sublabel_sigma": "n5 0.0047/0.0021, n10 0.0071/0.0032",
+   "Q2b_EQUIV_sd_diff": "n5 0.0115/0.0052, n10 0.0190/0.0086",
+   "margins_from_extract": "m_{192,P}=0.460-0.423=0.037, m_{192,D}=0.434-0.423=0.011, m_{336,P}=0.497-0.484=0.013, m_{336,D}=0.499-0.484=0.015, m_192=0.011 (DLinear), m_336=0.005 (FITS 0.489): all match §1"
+  },
+  "Q3_table_sD_0.0005": {
+   "H192 sT=0.002 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.00 | horizon: VAN 0.96 SHR 0.03 | arm tfps_gauss: REV 0.04 VAN 0.95 SHR 0.01 | Q2 gauss-vs-zero: GB 0.04 ZB 0.05 EQ 0.91",
+   "H192 sT=0.002 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.00 | horizon: SHR 1.00 | arm tfps_gauss: SHR 1.00 | Q2 gauss-vs-zero: GB 0.04 ZB 0.05 EQ 0.91",
+   "H192 sT=0.002 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.00 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.91",
+   "H192 sT=0.002 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.00 | horizon: REV 0.02 VAN 0.96 SHR 0.02 | arm tfps_gauss: REV 0.04 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.002 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.00 | horizon: SHR 1.00 | arm tfps_gauss: SHR 1.00 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.002 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.00 | horizon: SHR 0.02 SURV 0.93 DEP 0.05 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.005 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.78 | horizon: VAN 0.91 SHR 0.09 | arm tfps_gauss: REV 0.04 VAN 0.93 SHR 0.03 | Q2 gauss-vs-zero: GB 0.06 ZB 0.05 EQ 0.89",
+   "H192 sT=0.005 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.78 | horizon: SHR 1.00 | arm tfps_gauss: VAN 0.10 SHR 0.90 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.89",
+   "H192 sT=0.005 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.78 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.90",
+   "H192 sT=0.005 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.55 | horizon: REV 0.02 VAN 0.93 SHR 0.06 | arm tfps_gauss: REV 0.04 VAN 0.92 SHR 0.03 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.005 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.55 | horizon: VAN 0.06 SHR 0.94 | arm tfps_gauss: VAN 0.12 SHR 0.88 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.005 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.55 | horizon: SHR 0.02 SURV 0.93 DEP 0.06 | arm tfps_gauss: SHR 0.04 SURV 0.95 | Q2 gauss-vs-zero: EQ 1.00",
+   "H192 sT=0.01 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.88 SHR 0.11 DEP 0.01 | arm tfps_gauss: REV 0.03 VAN 0.93 SHR 0.04 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.52 INC 0.38",
+   "H192 sT=0.01 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.02 SHR 0.42 INC 0.01 DEP 0.55 | arm tfps_gauss: VAN 0.28 SHR 0.48 INC 0.24 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.53 INC 0.38",
+   "H192 sT=0.01 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.79 DEP 0.21 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.92 INC 0.05 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.52 INC 0.38",
+   "H192 sT=0.01 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.98 | horizon: REV 0.01 VAN 0.91 SHR 0.06 DEP 0.01 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+   "H192 sT=0.01 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.98 | horizon: VAN 0.18 SHR 0.44 INC 0.12 DEP 0.26 | arm tfps_gauss: VAN 0.27 SHR 0.48 INC 0.24 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+   "H192 sT=0.01 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.98 | horizon: SHR 0.01 SURV 0.87 INC 0.02 DEP 0.10 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.92 INC 0.05 | Q2 gauss-vs-zero: EQ 0.88 INC 0.12",
+   "H192 sT=0.02 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.86 SHR 0.12 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H192 sT=0.02 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.01 SHR 0.01 INC 0.21 DEP 0.76 | arm tfps_gauss: VAN 0.20 SHR 0.08 SURV 0.12 INC 0.59 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H192 sT=0.02 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.11 INC 0.11 DEP 0.77 | arm tfps_gauss: VAN 0.03 SURV 0.49 INC 0.49 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H192 sT=0.02 sD=0.0005 rho=0.9 gain=0": "P(extend) 1.00 | horizon: REV 0.01 VAN 0.91 SHR 0.07 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+   "H192 sT=0.02 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.13 SHR 0.02 SURV 0.07 INC 0.43 DEP 0.35 | arm tfps_gauss: VAN 0.20 SHR 0.08 SURV 0.12 INC 0.60 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+   "H192 sT=0.02 sD=0.0005 rho=0.9 gain=m": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.38 INC 0.36 DEP 0.26 | arm tfps_gauss: VAN 0.02 SURV 0.49 INC 0.48 | Q2 gauss-vs-zero: EQ 0.04 INC 0.96",
+   "H336 sT=0.002 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.00 | horizon: REV 0.01 VAN 0.96 SHR 0.03 | arm tfps_gauss: REV 0.05 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.04 EQ 0.87 INC 0.04",
+   "H336 sT=0.002 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.00 | horizon: VAN 0.01 SHR 0.99 | arm tfps_gauss: VAN 0.03 SHR 0.97 | Q2 gauss-vs-zero: GB 0.05 ZB 0.04 EQ 0.87 INC 0.04",
+   "H336 sT=0.002 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.00 | horizon: SURV 0.88 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.95 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.87 INC 0.04",
+   "H336 sT=0.002 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.01 | horizon: REV 0.02 VAN 0.96 SHR 0.02 | arm tfps_gauss: REV 0.04 VAN 0.94 SHR 0.01 | Q2 gauss-vs-zero: EQ 1.00",
+   "H336 sT=0.002 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.01 | horizon: VAN 0.02 SHR 0.98 | arm tfps_gauss: VAN 0.03 SHR 0.97 | Q2 gauss-vs-zero: EQ 1.00",
+   "H336 sT=0.002 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.01 | horizon: SHR 0.02 SURV 0.93 DEP 0.05 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 1.00",
+   "H336 sT=0.005 sD=0.0005 rho=0.0 gain=0": "P(extend) 0.85 | horizon: VAN 0.92 SHR 0.08 | arm tfps_gauss: REV 0.04 VAN 0.93 SHR 0.03 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 EQ 0.34 INC 0.55",
+   "H336 sT=0.005 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 0.85 | horizon: SHR 0.93 DEP 0.07 | arm tfps_gauss: VAN 0.07 SHR 0.91 SURV 0.02 | Q2 gauss-vs-zero: GB 0.05 ZB 0.06 EQ 0.34 INC 0.56",
+   "H336 sT=0.005 sD=0.0005 rho=0.0 gain=m": "P(extend) 0.84 | horizon: SURV 0.89 DEP 0.11 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: GB 0.06 ZB 0.06 EQ 0.34 INC 0.55",
+   "H336 sT=0.005 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.65 | horizon: REV 0.02 VAN 0.92 SHR 0.06 | arm tfps_gauss: REV 0.05 VAN 0.92 SHR 0.04 | Q2 gauss-vs-zero: EQ 0.68 INC 0.31",
+   "H336 sT=0.005 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.65 | horizon: VAN 0.05 SHR 0.89 SURV 0.01 DEP 0.05 | arm tfps_gauss: VAN 0.09 SHR 0.88 SURV 0.03 | Q2 gauss-vs-zero: EQ 0.68 INC 0.32",
+   "H336 sT=0.005 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.65 | horizon: SHR 0.02 SURV 0.93 DEP 0.06 | arm tfps_gauss: SHR 0.04 SURV 0.96 | Q2 gauss-vs-zero: EQ 0.68 INC 0.32",
+   "H336 sT=0.01 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.87 SHR 0.09 DEP 0.04 | arm tfps_gauss: REV 0.03 VAN 0.93 SHR 0.03 SURV 0.01 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.01 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.04 SHR 0.14 SURV 0.04 DEP 0.78 | arm tfps_gauss: VAN 0.33 SHR 0.22 SURV 0.35 INC 0.09 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.01 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.87 DEP 0.13 | arm tfps_gauss: VAN 0.01 SHR 0.03 SURV 0.95 INC 0.01 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.01 sD=0.0005 rho=0.9 gain=0": "P(extend) 0.98 | horizon: REV 0.01 VAN 0.91 SHR 0.06 DEP 0.02 | arm tfps_gauss: REV 0.03 VAN 0.92 SHR 0.04 INC 0.01 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+   "H336 sT=0.01 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 0.98 | horizon: VAN 0.23 SHR 0.20 SURV 0.24 INC 0.03 DEP 0.29 | arm tfps_gauss: VAN 0.33 SHR 0.23 SURV 0.34 INC 0.09 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+   "H336 sT=0.01 sD=0.0005 rho=0.9 gain=m": "P(extend) 0.98 | horizon: SHR 0.01 SURV 0.92 DEP 0.06 | arm tfps_gauss: VAN 0.01 SHR 0.02 SURV 0.95 INC 0.01 | Q2 gauss-vs-zero: EQ 0.02 INC 0.98",
+   "H336 sT=0.02 sD=0.0005 rho=0.0 gain=0": "P(extend) 1.00 | horizon: VAN 0.17 INC 0.07 DEP 0.76 | arm tfps_gauss: REV 0.03 VAN 0.53 SURV 0.04 INC 0.40 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.02 sD=0.0005 rho=0.0 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.01 INC 0.20 DEP 0.78 | arm tfps_gauss: VAN 0.18 SURV 0.24 INC 0.58 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.02 sD=0.0005 rho=0.0 gain=m": "P(extend) 1.00 | horizon: SURV 0.20 INC 0.06 DEP 0.74 | arm tfps_gauss: VAN 0.03 SURV 0.59 INC 0.38 | Q2 gauss-vs-zero: GB 0.05 ZB 0.05 INC 0.90",
+   "H336 sT=0.02 sD=0.0005 rho=0.9 gain=0": "P(extend) 1.00 | horizon: REV 0.01 VAN 0.43 SURV 0.02 INC 0.26 DEP 0.27 | arm tfps_gauss: REV 0.03 VAN 0.54 SURV 0.04 INC 0.39 | Q2 gauss-vs-zero: INC 1.00",
+   "H336 sT=0.02 sD=0.0005 rho=0.9 gain=m/2": "P(extend) 1.00 | horizon: VAN 0.11 SURV 0.15 INC 0.41 DEP 0.32 | arm tfps_gauss: VAN 0.18 SURV 0.24 INC 0.57 | Q2 gauss-vs-zero: INC 1.00",
+   "H336 sT=0.02 sD=0.0005 rho=0.9 gain=m": "P(extend) 1.00 | horizon: VAN 0.01 SURV 0.48 INC 0.25 DEP 0.25 | arm tfps_gauss: VAN 0.03 SURV 0.59 INC 0.38 | Q2 gauss-vs-zero: INC 1.00"
+  },
+  "bound_level_error_rates_with_and_without_extension": {
+   "H192 sT=0.005 sD=0.0005 ext=False": {
+    "P_extend": 0.0,
+    "gain0_P_L_gt0_PatchTST": 0.0486,
+    "gain0_P_L_gt0_DLinear": 0.0525,
+    "gainm_P_U_lt_m_PatchTST": 0.0244,
+    "gainm_P_U_lt_m_DLinear": 0.0267,
+    "gainm_P_U_lt_m_either": 0.038
+   },
+   "H192 sT=0.005 sD=0.0005 ext=True": {
+    "P_extend": 0.787,
+    "gain0_P_L_gt0_PatchTST": 0.0521,
+    "gain0_P_L_gt0_DLinear": 0.0512,
+    "gainm_P_U_lt_m_PatchTST": 0.0253,
+    "gainm_P_U_lt_m_DLinear": 0.027,
+    "gainm_P_U_lt_m_either": 0.0386
+   },
+   "H192 sT=0.01 sD=0.0005 ext=False": {
+    "P_extend": 0.0,
+    "gain0_P_L_gt0_PatchTST": 0.0538,
+    "gain0_P_L_gt0_DLinear": 0.0515,
+    "gainm_P_U_lt_m_PatchTST": 0.027,
+    "gainm_P_U_lt_m_DLinear": 0.0255,
+    "gainm_P_U_lt_m_either": 0.0323
+   },
+   "H192 sT=0.01 sD=0.0005 ext=True": {
+    "P_extend": 0.999,
+    "gain0_P_L_gt0_PatchTST": 0.0505,
+    "gain0_P_L_gt0_DLinear": 0.0496,
+    "gainm_P_U_lt_m_PatchTST": 0.026,
+    "gainm_P_U_lt_m_DLinear": 0.0242,
+    "gainm_P_U_lt_m_either": 0.0312
+   },
+   "H336 sT=0.005 sD=0.0005 ext=False": {
+    "P_extend": 0.0,
+    "gain0_P_L_gt0_PatchTST": 0.0502,
+    "gain0_P_L_gt0_DLinear": 0.0516,
+    "gainm_P_U_lt_m_PatchTST": 0.0237,
+    "gainm_P_U_lt_m_DLinear": 0.0262,
+    "gainm_P_U_lt_m_either": 0.0372
+   },
+   "H336 sT=0.005 sD=0.0005 ext=True": {
+    "P_extend": 0.848,
+    "gain0_P_L_gt0_PatchTST": 0.0531,
+    "gain0_P_L_gt0_DLinear": 0.0529,
+    "gainm_P_U_lt_m_PatchTST": 0.0253,
+    "gainm_P_U_lt_m_DLinear": 0.0252,
+    "gainm_P_U_lt_m_either": 0.0378
+   },
+   "H336 sT=0.01 sD=0.0005 ext=False": {
+    "P_extend": 0.0,
+    "gain0_P_L_gt0_PatchTST": 0.0495,
+    "gain0_P_L_gt0_DLinear": 0.0482,
+    "gainm_P_U_lt_m_PatchTST": 0.0263,
+    "gainm_P_U_lt_m_DLinear": 0.0251,
+    "gainm_P_U_lt_m_either": 0.0319
+   },
+   "H336 sT=0.01 sD=0.0005 ext=True": {
+    "P_extend": 1.0,
+    "gain0_P_L_gt0_PatchTST": 0.0506,
+    "gain0_P_L_gt0_DLinear": 0.0503,
+    "gainm_P_U_lt_m_PatchTST": 0.0262,
+    "gainm_P_U_lt_m_DLinear": 0.0254,
+    "gainm_P_U_lt_m_either": 0.0323
+   }
+  },
+  "D_init_really_matters": {
+   "H192 sT=0.002 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.0,
+    "horizon": "SHR 0.01 DEP 0.99",
+    "arm_gauss": "SHR 0.04 SURV 0.95"
+   },
+   "H192 sT=0.005 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.72,
+    "horizon": "SHR 0.01 DEP 0.99",
+    "arm_gauss": "SHR 0.04 SURV 0.96"
+   },
+   "H192 sT=0.01 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.998,
+    "horizon": "SURV 0.03 DEP 0.97",
+    "arm_gauss": "VAN 0.01 SHR 0.02 SURV 0.93 INC 0.04"
+   },
+   "H336 sT=0.002 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.004,
+    "horizon": "SHR 0.01 DEP 0.98",
+    "arm_gauss": "SHR 0.04 SURV 0.95"
+   },
+   "H336 sT=0.005 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.792,
+    "horizon": "SHR 0.01 DEP 0.99",
+    "arm_gauss": "SHR 0.04 SURV 0.96"
+   },
+   "H336 sT=0.01 sD=0.0005 rho=0.5 gauss/unit gain=m, zero arm worse by min(m_PatchTST,m_DLinear)": {
+    "P_extend": 0.999,
+    "horizon": "SHR 0.01 SURV 0.01 DEP 0.98",
+    "arm_gauss": "VAN 0.01 SHR 0.03 SURV 0.95 INC 0.02"
+   }
+  },
+  "headlines": [
+   "Per-arm false exclusion of a true claim (gain = m): P(SHRINKS or VANISHES or REVERSED) 0.04-0.05 at sigma_T <= 0.01; horizon-level negative 0.00-0.03.",
+   "False positive (gain = 0): per-arm SURVIVES <= 0.01 except H=336 sigma_T 0.02 (0.04); horizon SURVIVES <= 0.02.",
+   "Both directions reachable: gain = 0 -> horizon VANISHES 0.86-0.98 for sigma_T <= 0.01; gain = m -> SURVIVES 0.78-0.94 for sigma_T <= 0.01; gain = m/2 -> SHRINKS 0.88-1.00 for sigma_T <= 0.005.",
+   "At sigma_T 0.02 (H=336) or gain = m/2 with sigma_T 0.01, DEPENDS ON D INIT is the modal horizon label even though arms are identical (0.26-0.79).",
+   "Extension type-I inflation per one-sided bound <= ~0.4 pp (0.049-0.054 with vs 0.048-0.054 without); the prereg's 0.5-1 pp is a safe upper statement.",
+   "P(extend): sigma_T 0.002 ~0.00; 0.005 0.55-0.85; >= 0.01 0.98-1.00."
+  ]
+ },
+ "summary": "Every number in the §7 reachability paragraph recomputes correctly for Q3. Bonferroni-on-U / IU-on-L brings the some-B negatives to <=5% (sim 3-4%). Both verdict directions are reachable for sigma_T <= ~0.01, and the extension trigger's type-I cost is under 0.5 pp. Three major issues, each with a mechanical fix. (1) The three-arm fallback 'DEPENDS ON D INIT' fires 9-79% when the arms are identical, so it asserts an untested D effect. Relabel it and route agree-or-inconclusive mixes to INCONCLUSIVE. (2) No fallback if the FREEZE check gives m <= 0: Q2 EQUIVALENT becomes unreachable and the trigger always fires. (3) A BLOCKED arm is unhandled in the horizon rule. Minor: trigger inputs, Q2 sub-label/Q2b thresholds, qualifier definitions."
+}

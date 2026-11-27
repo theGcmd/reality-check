@@ -1,0 +1,61 @@
+{
+  "lens": "foregone",
+  "model": "this session's model",
+  "round": 3,
+  "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+  "verdict": "LICENSED_WITH_FIXES",
+  "r2_issues_status": [
+    {"issue": "Q2 confounded by checkpoint selection (aux term ~10x val MSE under N(0,1))", "fixed": "yes", "note": "Pure-val-MSE checkpoint co-reported with a SELECTION-SENSITIVE suffix (PREREG §6 l.153-155, §7 l.183-184). Aux share and best epoch logged (l.156-158). §5 l.116-118 states the scale consequence in advance. The new arm 2 also removes most of the confound for that contrast: measured aux at init is d1+d2 ~0.0103 per EDESC for N(0,1/112) vs 0.0106 for D=0."},
+    {"issue": "Reachability text wrong for Q3 (SHRINKS width floor, Welch df), and the extension trigger inherited the error", "fixed": "yes", "note": "§7 l.221-228 now uses hw_L+hw_U < m_{H,B}, Welch-Satterthwaite df and an sd-ratio case, and the trigger (l.237) uses the same width. I recomputed every number in l.221-228 and they are correct to 3 digits. Two small leftover misstatements are listed below as minor issues (Q2 sub-label floor, Q2b paired floor)."},
+    {"issue": "tfps_zero routing numbers are fixed by construction", "fixed": "yes", "note": "§5 l.120-121 states A ~0.25 and H_r ~ln 4, with a flag if A falls outside 0.25 +/- 0.02. Re-measured: s range exactly 0, argmax usage [1,0,0,0], A 0.2500, H_r 1.3861."},
+    {"issue": "A cut 0.30 sits next to the init value; A ceiling not stated", "fixed": "yes", "note": "The ceiling is simulated and printed beside A, and the mean row range of s is reported (l.185-189). The normalised (A-0.25)/(A_onehot-0.25) form was not adopted. That is acceptable because both raw numbers are printed."},
+    {"issue": "Citation: time-file permutes at :81-85", "fixed": "yes", "note": "§2 l.60 cites :77 vs :81-85."}
+  ],
+  "issues": [
+    {
+      "severity": "major",
+      "issue": "The name of the Q3 horizon fallback label, DEPENDS ON D INIT, makes a causal claim about D that the rule does not test. The rule fires whenever the three per-arm labels disagree and are not all negative. Seed noise alone often causes that disagreement, even when all three arms have the same distribution (which the init probe suggests for unit vs zero, see the next issue). The label is therefore often the modal horizon outcome in cases where D has no effect. It can also contradict the Q2 labels printed beside it, for example Q2 EQUIVALENT for both contrasts next to Q3 DEPENDS ON D INIT. This does not make any verdict unreachable. It does make the label wrong as worded in many plausible cases.",
+      "evidence": "Monte Carlo of the §7 rules as written: 20k reps, n=5, Welch-Satterthwaite, one-sided 95% L and 97.5% U, three TFPS arms iid (D irrelevant), sd_PatchTST 0.004, sd_DLinear 0.0015, shared baseline samples. P(DEPENDS ON D INIT) with identical arms: H=192, true gain m/2, sd_T 0.006: 0.60; sd_T 0.012: 0.75; true gain m, sd_T 0.012: 0.76. H=336, true gain 0, sd_T 0.012: 0.75 (single-arm VANISHES 0.53, INCONCLUSIVE 0.40). Script: scratchpad mc.py, re-runnable in about 10 s.",
+      "fix": "Rename the fallback to a neutral `NOT CONSISTENT ACROSS TFPS ARMS (gauss: ..., unit: ..., zero: ...)`. Add: 'if both Q2 contrasts at this H are labelled EQUIVALENT or INCONCLUSIVE, append \"— Q2 detects no D effect; arm disagreement may be seed noise\"'. Owner decision 9 is untouched: a negative still needs every arm."
+    },
+    {
+      "severity": "minor",
+      "issue": "tfps_gauss_unit is, at init, indistinguishable in routing from tfps_zero. Q2 for that contrast is therefore expected, though not guaranteed by construction, to give EQUIVALENT (if sd allows) or INCONCLUSIVE, with about 5% per side for rules 1-2 under a null. The prereg's stated init numbers for this arm are also off. Two exact facts follow from Cluster.py:61-68. (a) s_unit(z) = s_N01(z/sqrt(112)) for the same G, so the unit arm reaches the N(0,1) arm's init spread only if ||z|| grows about 10.6x (the s range of a random-subspace D is bounded near 0.14 at any scale; r2 sweep). (b) argmax s is scale-invariant, so at init arms 1 and 2 have the same argmax partition, and the Q2b noise-off unit model starts from the same deterministic routing as arm 1. The outcome stays open: training can grow z or rotate D through the KL term. This is not blocking, because Q2 asks whether the init matters in the released code, and 'no' is a legitimate answer. But a reader should know in advance that the unit arm is effectively a second random-routing control unless training sharpens s, and that the routing suffix will almost surely fire for it.",
+      "evidence": "Forward probe, no training: released Model (models/PatchTST_MoE_cluster.py), H=192 config from scripts/etth1.sh:77-89, torch.manual_seed(2021), eval mode, first 4 ETTh1 test batches (12288 rows per router), D = G/sqrt(112) with G drawn from Generator(30000+2021 / 40000+2021), A averaged over 20 noise draws. Time router: mean row range of s 0.0051 (median 0.0047, max 0.021), row max 0.2527, A 0.2516 (sd over draws 0.004), H_r 1.3861. Freq router: range 0.0082 (max 0.035), A 0.2505. Same G at sd 1 reproduces r2: range 0.109/0.119, A 0.281/0.282. D=0: range 0, A 0.2500. Argmax usage is identical for the unit and N(0,1) arms (time [0.330, 0.283, 0.151, 0.236]). Analytic check: range ~0.138*||z||^2/(||z||^2+4*eta*d) gives 0.0054 at ||z||^2=22.8, which matches.",
+      "fix": "§5 l.118: replace 'row range ≈ 0.02, A ≈ 0.26' with 'mean row range ≈ 0.005 (time) / 0.008 (freq), max ≈ 0.02-0.035; A ≈ 0.251 / 0.250, within one draw-sd of the zero arm's 0.250'. Add one sentence: 'At init, arm 2 routing is indistinguishable from arm 3. Q2(gauss_unit) EQUIVALENT or INCONCLUSIVE is the expected outcome unless training sharpens s; s_unit(z) = s_N01(z/√112), and arms 1-2 share argmax s at init.' Add per-epoch mean row range of s per router to the §6 log, so the reader can see whether training changed it."
+    },
+    {
+      "severity": "minor",
+      "issue": "Reachability of the Q2 ', smaller than m_H' sub-labels is misstated. They use the 90% two-sided Q2 CI, so the floor is 2*hw_90 < m_H, i.e. sigma < m_H/2.352 at n=5 (0.0047 at H=192, 0.0021 at H=336). The prereg instead lumps them with SHRINKS under hw_L+hw_U, i.e. m/2.635. The stated floor is too strict by about 12%.",
+      "evidence": "PREREG l.179-180 (sub-labels on the 90% CI) vs l.227-228. Welch df 8: t.95 = 1.860, se = 0.632*sigma, hw = 1.176*sigma.",
+      "fix": "At l.227, split the sentence: 'Q2 \", smaller than m_H\": 2·hw < m_H → σ < m_H/2.352 (0.0047 / 0.0021 at n=5; m_H/1.55 at n=10)'."
+    },
+    {
+      "severity": "minor",
+      "issue": "Reachability of NOISE-OFF EQUIVALENT is stated with the unpaired Welch floor (sigma < 0.0094 / 0.0043), but Q2b uses a paired t over seeds (l.173, l.192). Its floor is on the sd of the per-seed differences, sd_diff < m_H/0.953 at n=5 (df 4, t.95 = 2.132). It is also not stated whether Q2b uses n=10 when the extension fires. Q2b is excluded from the trigger, but arms 1-2 gain seeds.",
+      "evidence": "PREREG l.192, l.225, l.242.",
+      "fix": "l.225: 'NOISE-OFF EQUIVALENT: paired hw = t_{0.95,n−1}·sd_diff/√n < m_H → sd_diff < 0.0115 / 0.0052 at n=5'. l.242: 'Q2b uses every seed the arms have (n=10 if extended), with the n=5 table beside it.'"
+    },
+    {
+      "severity": "minor",
+      "issue": "The item-level rules ('same label at both horizons') do not say whether suffixes, sub-labels (', smaller than m_H') and the parenthesised per-arm contents of the fallback label count toward 'same'. Two analysts could give different item labels from the same tables.",
+      "evidence": "PREREG l.190, l.194, l.218.",
+      "fix": "Add: 'Same label means the same base label (the token before any comma, dash-suffix or parenthesis); suffixes and sub-labels are printed per horizon.'"
+    }
+  ],
+  "answers": {
+    "q1_unit_vs_zero_routing": "At init the two are not distinguishable. A is 0.2516/0.2505 for unit vs 0.2500 for zero, a gap of less than 1 noise-draw sd. The mean s range is 0.005/0.008 for unit vs 0 for zero. Q2(unit) is expected, not guaranteed, to come out EQUIVALENT or INCONCLUSIVE. It can differ only if training grows ||z|| by about 10x or the KL term rotates D. The routing suffix (A < 0.30) will almost surely fire for unit.",
+    "q2_horizon_rule": "Negative horizon labels are reachable, and including tfps_zero does not make them unreachable. Per-arm labels are strongly correlated because all three arms share the same baseline samples. With identical arms and no true gain, VANISHES (or worse) fires at the horizon level 0.86-0.96 at H=192 and 0.88-0.96 at H=336 for sd_T ≤ 0.006, close to the single-arm rate. Negatives become rare only when the zero arm is truly better (H=336, sd_T 0.012: 0.06), or when noise is large (H=336, sd_T 0.012: 0.18 vs single-arm 0.53). The real cost of the rule falls on SURVIVES, which needs unanimity (0.14-0.24 vs 0.51-0.61 for a single arm at sd_T 0.012), and on the over-frequent DEPENDS ON D INIT label (major issue above).",
+    "q3_reachability_numbers": "Recomputed, all correct. n=5 equal sd: df 8, t 1.860/2.306, hw_L 1.176σ, hw_U 1.458σ. sd ratio 0.1: df 4.08, hw_L 0.956σ_T, hw_U 1.243σ_T (prereg 0.953/1.238, a negligible difference). n=10: df 18, 0.775σ/0.940σ. Q2 EQUIVALENT: 0.0094/0.0043 (n=5), 0.0142/0.0064 (n=10). SHRINKS: PatchTST 0.0140/0.0049, DLinear 0.0042/0.0057 (n=5). The 'no width floor' claim for REVERSED/VANISHES/SURVIVES/Q2 rules 1-2 is literally true. VANISHES needs U in [0, m) because REVERSED is checked first, a window of width m in d. Exceptions: the Q2 sub-label and Q2b floors (minor issues). For the DLinear contrast in the realistic unequal-sd case, the SHRINKS floor is σ_T < 0.011/2.199 = 0.0050 at H=192."
+  },
+  "measurements": {
+    "probe": "Forward only, no training, about 3 s CPU. Script at /tmp/claude-0/-home-claude/935b490b-d7df-59d5-88a2-c19cacae8904/scratchpad/probe.py (patches EDESC.__init__ and NoisyTopkRouter_Cluster.forward in-process; nothing under work/repos edited).",
+    "H192_init": {
+      "gauss_N01": {"time": {"s_range_mean": 0.1086, "s_rowmax_mean": 0.3068, "A": 0.2812}, "freq": {"s_range_mean": 0.1191, "A": 0.2821}, "d1_time": 1.150, "d2": [0.997, 1.011]},
+      "gauss_unit": {"time": {"s_range_mean": 0.0051, "s_range_median": 0.0047, "s_range_max": 0.0214, "s_rowmax_mean": 0.2527, "A": 0.2516, "A_sd_over_draws": 0.0040, "H_r": 1.3861, "argmax_usage": [0.330, 0.283, 0.151, 0.236]}, "freq": {"s_range_mean": 0.0082, "s_range_max": 0.0345, "A": 0.2505, "A_sd_over_draws": 0.0045}, "d1": [0.00137, 0.00129], "d2": [0.00890, 0.00903]},
+      "zero": {"time": {"s_range_max": 0.0, "A": 0.2500, "H_r": 1.3861, "argmax_usage": [1, 0, 0, 0]}, "freq": {"s_range_max": 0.0, "A": 0.2500}, "d1": [0.01058, 0.01058], "d2": [0.0, 0.0]}
+    },
+    "monte_carlo": "/tmp/claude-0/-home-claude/935b490b-d7df-59d5-88a2-c19cacae8904/scratchpad/mc.py: §7 Q3 per-arm rules plus the horizon rule, 20k reps per cell, grid H ∈ {192, 336} × sd_T ∈ {0.003, 0.006, 0.012} × true gain ∈ {0, m/2, m} × zero-arm shift."
+  },
+  "summary": "No verdict family is settled or made unreachable by how the arms are built. The forward probe shows that tfps_gauss_unit routing at init matches tfps_zero (A 0.2516/0.2505 vs 0.2500; mean s range 0.005/0.008), because s_unit(z) = s_N01(z/√112). Q2(unit) is therefore expected, though not guaranteed, to come out EQUIVALENT or INCONCLUSIVE, and §5's init numbers for that arm should be corrected. The all-arms rule for negative Q3 labels does not make them unreachable: shared baselines keep the arm labels correlated (VANISHES at the horizon level 0.86-0.96 under a no-gain null). But DEPENDS ON D INIT fires 60-80% with identical arms, so it needs a neutral name (major, mechanical fix). The §7 reachability numbers are correct, except for the Q2 sub-label and Q2b paired floors."
+}

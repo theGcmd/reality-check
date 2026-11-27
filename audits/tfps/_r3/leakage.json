@@ -1,0 +1,118 @@
+{
+  "lens": "leakage",
+  "model": "this session's model",
+  "round": 3,
+  "prereg_reviewed": "audits/tfps/PREREG.md r3 @ bc7055d",
+  "verdict": "LICENSED_WITH_FIXES",
+  "r2_issues_status": [
+    {
+      "issue": "Selection criterion differs in magnitude between D arms (aux ~10x val MSE under N(0,1)); log components and pre-register pure-val-MSE re-selection with suffix",
+      "fixed": "yes",
+      "note": "Sec.2 states the scale effect; sec.6 per-epoch log (val MSE, aux per router, epochs-to-stop, aux share); pure-val-MSE checkpoint co-reported; SELECTION-SENSITIVE suffix on Q2 (both selections) and on negative Q3 labels; arm 2 (N(0,1/112)) added by owner decision 9. Q3 suffix only for negative labels, which is the conservative direction (released selection can only hurt TFPS through the aux term)."
+    },
+    {
+      "issue": "Pure-val-MSE hook on vali() would also fire on the test pass (exp_main.py:257-258)",
+      "fixed": "yes",
+      "note": "Sec.8: keyed on val-loader identity (loader built at exp_main.py:139), self-test: once per epoch, set_type==1 only, never on test loader. set_type is set at data_loader.py:31, val=1."
+    },
+    {
+      "issue": "Recompute of recorded val MSE impossible without RNG state (noisy router SparseMoE.py:59, shuffled val loader data_factory.py:28-30)",
+      "fixed": "yes",
+      "note": "Sec.8 saves torch/numpy/python RNG state before each val pass; restore-and-reproduce to 1e-6 is a self-test. Saving state does not consume RNG. With num_workers 0 the only RNG consumers in a val pass are the RandomSampler/iterator seed draw and randn_like at SparseMoE.py:59 (grep of layers/ and models/ finds no other rand call), so the test is satisfiable."
+    },
+    {
+      "issue": "Baseline lr-selection value not returned by train() (EarlyStopping local, tools.py:47,69; 6-decimal print)",
+      "fixed": "yes",
+      "note": "EarlyStopping subclass replacing exp.exp_main.EarlyStopping (looked up by name from module globals at tfps exp_main.py:4/:152, official :4/:112) writes val_loss_min and best epoch at each save; lr rule reads only that. Residual precision note in issues (baseline val loss is float32)."
+    },
+    {
+      "issue": "itr defaults to 2 in both run_longExp.py (tfps :91, official :77), second run per call",
+      "fixed": "yes",
+      "note": "--itr 1 in shared settings (sec.5) and wrapper asserts exactly one setting dir and one checkpoint.pth per run (sec.8). Official setting string (official run_longExp.py:120) lacks lr and seed; unique model_id with _lr<x> and per-run cwd removes the collision."
+    },
+    {
+      "issue": "D draw location ambiguous (re-seeding inside EDESC vs shifting the global stream)",
+      "fixed": "yes",
+      "note": "Dedicated torch.Generator 30000+seed (time) / 40000+seed (freq), global RNG untouched; torch.Tensor allocation at Cluster.py:30 consumes no RNG, so replacing it with a generator draw leaves the global stream intact; self-tests: non-D params bitwise equal across arms and equal global RNG state after construction. New side effect found: these seeds coincide with eval-noise seeds k=3,4 (issue below)."
+    },
+    {
+      "issue": "NaN val loss makes EarlyStopping save every epoch (tools.py:50-63); not in failed-run rule",
+      "fixed": "yes",
+      "note": "Sec.6 failed run includes any non-finite val loss; sec.5 a non-finite-val run cannot be selected in the lr grid."
+    },
+    {
+      "issue": "Extension is a data-dependent second look; commit n=5 files and half-widths first; full lr grid for new seeds",
+      "fixed": "yes",
+      "note": "Sec.7: committed script extension_trigger.py reads only per-seed primary scores, widths only, output and n=5 per-run files committed before any table or label; full lr grid, lr re-selected by the same rule; n=5 table reported beside n=10; Q2b excluded."
+    },
+    {
+      "issue": "Budget asymmetry: baselines best-of-4 lr on val, TFPS one authors' lr of unknown provenance",
+      "fixed": "yes",
+      "note": "Sec.5 TFPS lr paragraph, label suffix 'baselines lr-searched per seed, TFPS not', sec.9; plus owner decision 11 published-lr table used as a qualifier on negative Q3 labels."
+    },
+    {
+      "issue": "Checkpoint path: test(test=1) hard-codes ./checkpoints/ (tfps exp_main.py:282, official :224); sensitivity checkpoint must not overwrite checkpoint.pth (tools.py:68)",
+      "fixed": "yes",
+      "note": "Sec.6: checkpoint loaded by absolute path with sha256, never via test(test=1); checkpoint_valmse.pth separate file, never overwriting checkpoint.pth."
+    },
+    {
+      "issue": "(other lenses, leakage-adjacent) single eval-noise draw per TFPS run; averaging must be chosen before scores",
+      "fixed": "yes",
+      "note": "Sec.6: K=5 draws seeded 10000k+seed, run score = mean over draws, fixed before any score; per-draw scores saved, mean |draw-mean| reported and flagged vs m_H/4. Same rule for the val-MSE checkpoint. No draw-level choice is left open except for the routing measurement (issue below)."
+    }
+  ],
+  "issues": [
+    {
+      "severity": "major",
+      "issue": "Step (c) wall-time measurement runs, done before FREEZE, will print test MSE for the scored configurations. 'Step (c) measures epochs-to-stop and s/epoch per arm' needs full training runs at H=192/336 under the released loop, which prints the test loss every epoch and the final test mse/mae, and appends them to a result file. If those runs use a seed in S (e.g. 2021, the released default) they are, up to determinism, the scored runs themselves, seen before the design is frozen. Nothing in sec.8 keeps those numbers away from the people who still finalise the prereg (FREEZE transcription of margins, resumable-state decision, any engineering choice).",
+      "evidence": "tfps exp/exp_main.py:258 (test pass every epoch), :260-261 (prints Test Loss), :383-390 (prints and appends mse to ./result_*.txt); run_longExp.py:163 (exp.test after train); official exp_main.py:200-203. PREREG sec.8 lines 275-278 (step (c) measures epochs-to-stop per arm), sec.8 line 280 (budget 'replaced by step (c) measurements'). Precedent: audits/tfps/feas_zero.log and feas_orth.log already show test losses (H=96, 3 epochs, seed 2021, lr 5e-4; not a scored config).",
+      "fix": "Add to sec.8: step (c) timing/feasibility runs use a seed outside S and outside the extension set (e.g. 999), are never scored, and their stdout passes through a filter that drops lines containing 'Test Loss' and 'mse:' (and the wrapper deletes ./result_*.txt and test_results/ after the run); epochs-to-stop is read from the filtered log. Record in STATE.md that no H=192/336 test number was seen before FREEZE. Also disclose in sec.2 or sec.9 that the H=96 feasibility logs (feas_zero/feas_orth, 3 epochs) exposed two test MSEs at a horizon outside the scored set."
+    },
+    {
+      "severity": "minor",
+      "issue": "Seed collision between eval-noise draws and the D generators. Eval draw k uses global seed 10000k+seed, so k=3 gives 30000+seed (the time-D generator seed) and k=4 gives 40000+seed (the frequency-D generator seed), for every seed. torch's CPU generator gives the same normal stream for the same seed whether global or dedicated, so the 'fresh' router noise in draws 3 and 4 is largely a shifted copy of the D initial values (G) of arms 1-2. Probe (torch 2.4.1 CPU, seed 2021): global manual_seed(32021) then randn(1536,4) equals randn(112,112) from Generator(32021) exactly (100% of entries); with one int64 draw first (what a DataLoader iterator consumes), 75% of entries equal G at a shift of 2. Effect on scores is probably negligible (each noise value is one of 12544 D entries), but draws 3 and 4 are not independent of arm 1/2's initialisation as the design assumes, and it is free to avoid.",
+      "evidence": "PREREG sec.5 lines 111-112 (30000+seed, 40000+seed) vs sec.6 line 146 (10000k+seed, k=1..5); SparseMoE.py:59 (torch.randn_like on the global RNG); probe run in this review (no training).",
+      "fix": "Change the eval-noise seeds to a disjoint range, e.g. 1_000_000 + 10000k + seed (or D generators to 7_000_000+seed / 8_000_000+seed), and add a self-test in sec.8 asserting that the sets {training seeds}, {D generator seeds}, {eval-noise seeds} are pairwise disjoint for S and the extension seeds."
+    },
+    {
+      "severity": "minor",
+      "issue": "The pure-val-MSE checkpoint is the min of val MSE over the epochs that the released criterion lets the run reach, not an early stop on val MSE. Its candidate set therefore differs by arm: under arm 1 the aux term keeps falling, so the run can go much longer (up to 100 epochs) and the val-MSE min is taken over more noisy (one router-noise draw per epoch) candidates than under arm 3. This is a val-side budget difference, not test leakage, but the sensitivity is not the 'pure-val-MSE early stopping' a reader might assume. Tie handling is also unstated.",
+      "evidence": "tfps exp/exp_main.py:257,262-265 (stop decided on total val loss); utils/tools.py:50-63; PREREG sec.6 lines 153-155.",
+      "fix": "Sec.6: state 'checkpoint_valmse = epoch with the lowest val MSE among epochs 1..stop epoch of the released criterion; ties to the earliest epoch', and print the per-arm mean number of candidate epochs next to the pure-val-MSE table (already logged as epochs-to-stop)."
+    },
+    {
+      "severity": "minor",
+      "issue": "Published-lr qualifier (owner decision 11) is under-specified in three places: (a) 'if it does not hold there' does not say whether a more negative published-lr label (e.g. REVERSED where the searched label is VANISHES) counts as holding; (b) no rule for a published-lr run that is non-finite while the seed is not failed under the search rule (a baseline seed fails only if all 4 lr runs fail); (c) the name 'published lr' omits that the other published settings differ (DLinear script batch 32, both scripts seq_len 336, patience 100).",
+      "evidence": "PREREG sec.5 lines 134-139, sec.7 lines 214-217; patchtst_official scripts/PatchTST/etth1.sh:42 (lr 1e-4, batch 128, seq_len 336 at :8), scripts/Linear/etth1.sh:24,38,52 (lr 5e-3, batch 32, seq_len 336 at :9); official run_longExp.py:80 (patience 100).",
+      "fix": "Sec.7: 'holds' = published-lr horizon label is in {REVERSED, VANISHES, SHRINKS} and at least as negative as the searched label (order REVERSED < VANISHES < SHRINKS). Sec.6: in the published-lr table a non-finite run at the published lr is a failed run for that table, with the same BLOCKED/n=4 rules. Label text: 'published-lr (lr from the PatchTST repo scripts; L=96, batch 128, patience 20 as sec.5)'."
+    },
+    {
+      "severity": "minor",
+      "issue": "Routing measurement (arm 5) does not say which eval-noise draw A and H_r are computed on. With K=5 draws available, picking one after looking would be a free choice that feeds the ROUTER NOISE suffix (A < 0.30).",
+      "evidence": "PREREG sec.5 arm 5 row (line 107) vs sec.6 line 146 (K=5 draws); sec.7 lines 185-189.",
+      "fix": "Sec.5/6: A, H_r, row max and row range are computed on every one of the K=5 draws and averaged per run (same as the score)."
+    },
+    {
+      "severity": "minor",
+      "issue": "No self-test that the instrumentation (val-pass hook, criterion/loader wrapping, EarlyStopping subclass, extra checkpoint save) leaves training unchanged. A hook that re-implements vali() or calls the model again would shift the global RNG stream (router noise SparseMoE.py:59, val shuffle) and silently make the audited runs differ from the released loop, differently by arm.",
+      "evidence": "PREREG sec.8 lines 264-271 test only the recorded values, not non-interference; tfps exp/exp_main.py:73-135 (vali takes criterion as argument, so recording MSE by wrapping criterion is possible without extra forward passes).",
+      "fix": "Add to sec.8: a 2-epoch TFPS run (arm 1, short train_epochs) and a 2-epoch PatchTST run with and without the instrumentation give bitwise-equal state_dicts, val losses and global RNG state at the end."
+    },
+    {
+      "severity": "minor",
+      "issue": "Baseline 'full float' val_loss_min is float32, not float64: the official vali() averages a list of 0-d float32 tensors with np.average, which returns numpy.float32 (checked). Exact ties between lr runs are improbable but less so than the text implies; the tie rule covers it.",
+      "evidence": "patchtst_official exp/exp_main.py:93-96 (total_loss.append(loss) of tensors, np.average); TFPS uses loss.item() (tfps exp_main.py:132) so its value is float64. Probe: np.average([torch.tensor(0.5), torch.tensor(0.25)]) -> numpy.float32.",
+      "fix": "Sec.5: write 'val_loss_min as returned by the repo's vali (float32 for the official repo), written with repr()', keep 'ties to the smaller lr'."
+    }
+  ],
+  "checks_passed": [
+    "No arm selects on test: early stopping and type3 lr read only vali_loss (tfps exp_main.py:257,262,267-268; official :199,204,209-210); the per-epoch test pass runs under eval()+no_grad (tfps :75-76,134) and only shifts RNG by shape.",
+    "Baseline lr chosen on val only, per seed, ties to smaller lr, non-finite excluded; TFPS one run; asymmetry disclosed in every label suffix.",
+    "K=5 averaging fixed before scores; noise-off arm and routing measurement reuse val-selected checkpoints; no test-based choice of draw for scores.",
+    "Extension trigger: mechanical, widths only, primary scores only, committed with n=5 files before labels; full lr grid re-run for new seeds.",
+    "Checkpoints loaded by absolute path with sha256; unique model_id per arm/H/seed/lr and per-run cwd avoid the official setting string's missing lr/seed (official run_longExp.py:120) and the hard-coded ./checkpoints/ in test(test=1).",
+    "Dedicated generator for D does not touch the global stream (Cluster.py:30 uses an uninitialised torch.Tensor); time EDESC is built before the frequency EDESC (models/PatchTST_MoE_cluster.py:156,171).",
+    "Scaler fit on train rows only and split borders shared by all arms (data_loader.py:48-62, byte-identical in both repos)."
+  ],
+  "summary": "All r2 leakage/selection/budget issues are fixed: the val-loader-keyed hook with RNG save/restore, the EarlyStopping subclass, --itr 1, absolute-path loading, the NaN rule, the committed width-only extension trigger, and the disclosed lr asymmetry. No arm selects on test. One major non-blocking gap: step (c) timing runs would print H=192/336 test MSE before FREEZE, possibly on a scored seed, so they need an off-set seed and filtered output. Minor: the eval-noise seeds for k=3/4 equal the D generator seeds (probe: the noise is a shifted copy of G); the pure-val-MSE candidate set and ties are unstated; the published-lr qualifier is underdefined; the routing-measurement draw is unstated; there is no non-interference self-test; baseline val loss is float32."
+}

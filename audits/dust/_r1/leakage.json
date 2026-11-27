@@ -1,0 +1,20 @@
+{
+  "lens": "leakage/selection",
+  "verdict": "LICENSED_WITH_FIXES",
+  "blocking": [
+    "R is defined as the 'best population the paper measures' (sec 3, 7). If 'best' means lowest reported TEST loss across populations, R is a min over test means (selection on test, favouring Dust; biases toward SURVIVES/INCONCLUSIVE). Pre-specify R before P1 is read: the default population 16384 (or the population the paper's own 1M sentence names), with other populations reported descriptively only.",
+    "Q2 fallback is contradictory and biased: 'reported from the tuning seed only' needs test on a tuning run, which sec 5 says the wrapper refuses; and test at seed 1000 after picking lr on seed-1000 val carries the shared init/order noise used for selection. Either require fresh scored seeds for Q2 or report Q2 as val-only with no test number."
+  ],
+  "fixes": [
+    "Data split is clean by construction (prepare_data.py:62-77: skip 200k docs, 20.5M-token train pool, then val pool, then test pool, sequential stream, train_1M = first 488 rows). Under P2 also require manifest skipped_documents=200000, no --parquet, sha256 recorded, plus a cheap exact-row and 50-token-span hash overlap check train/val/test (FineWeb cross-dump near-duplicates); report, do not filter.",
+    "Eval-point asymmetry: B0 and Dust take best-of-32 val checkpoints, B1 best-of-5 at 60-100%. Correctly declared as hurting only B1, but then a SURVIVES label is partly protocol-driven; add that caveat to SURVIVES/INCONCLUSIVE text. (Val and test are independent ~1.1M-token sets, so best-of-k winner's-curse on test is small; the asymmetry is a budget, not a leak.)",
+    "B0 option (b) anchors on one seed vs the paper's multi-seed mean with a 0.03 tolerance; prefer (a), or the released schedule at >= the paper's seed count.",
+    "Pre-specify: lr ties within a batch (lowest val), and no grid extension if the optimum is at an edge (3e-4 or 1e-2); report edge hits.",
+    "Decide the 136-sequence tuning-val option before FREEZE, not after seeing costs on real data.",
+    "No run on the real P2 data (smoke tests included) may evaluate val or test before FREEZE; grad-accumulation self-test on random tokens only.",
+    "Accumulation: loss is per-token mean and all rows are full 2048 with no ignore_index, so sum(mean)/b equals the batched mean; clip once on the accumulated gradient, not per micro-batch. Steps/order identical across b (488/244/61 exact).",
+    "Q0/ANCHOR/SHRINKS: name which paper backprop number is the reference (SGD vs Adam at 1M); choosing after P1 is a selection.",
+    "P1(d): also record whether test informed any paper choice (population, recipe constants, init scale) and Dust's grid size, so tuning budgets can be compared."
+  ],
+  "notes": "Seeds: tuning seed 1000 gives make_model(1000) and randperm(1001); scored 0-4 give init 0-4 and order 1-5, so tuning and scored seeds do not overlap in init or order. All arms share the same 488 training sequences by design, so 'disjoint' here only guards against lucky init or order, which is the right scope. Test is touched once per scored run, at the val-selected checkpoint, as in the repo. No arm sees test during selection, given the blocking fixes on R and Q2."
+}

@@ -1,0 +1,18 @@
+{
+  "lens": "statistics",
+  "verdict": "LICENSED_WITH_FIXES",
+  "blocking": [
+    "S1 Borrowed s_R breaks Welch (same SD in both terms). Rule: reported s_R -> SE=sqrt(s_B1^2/5+s_R^2/n_R), Welch-Satterthwaite df; borrowed -> s:=max(SD(B1),SD(B0)), SE=s*sqrt(1/5+1/n_R), df=4; n_R unreported -> 3.",
+    "S2 Convert P1 spread to an SD: SE*sqrt(n); t-CI half-width h*sqrt(n)/t_{(1+L)/2,n-1}; bootstrap/normal CI h*sqrt(n)/z; min-max only range/2. Record in PAPER_EXTRACT.md.",
+    "S3 Label precedence, and which backprop: G := the paper's measured 1M backprop from the same comparison as R. Check in order: REVERSED (CI_hi<0); SHRINKS (CI_lo>0 and D<=0.5(G-R)); SURVIVES (CI_lo>0); else INCONCLUSIVE. If G-R < 2*s_R/sqrt(n_R), no SHRINKS; report D/(G-R).",
+    "S4 No reference data hashes, so our test set may differ from the paper's (a shift of about 0.01-0.02, as large as the effect). Under DRIFT also compute D'=D-A with A=mean(B0)-P_SGD and SE'=sqrt(SE^2+SE_B0^2+s_P^2/n_P). If the labels from D and D' differ -> INCONCLUSIVE (environment-sensitive)."
+  ],
+  "fixes": [
+    "F1 ANCHOR OK iff |A| <= max(0.03, t_{0.95,df}*SE_A). At seed SD 0.03 a fixed 0.03 band gives a false DRIFT about 17% of the time.",
+    "F2 B0 option (b): anchor only on released-schedule seeds; if n=1, borrow the SD of B0's 5-point seeds (df=4).",
+    "F3 Mis-selection biases toward SURVIVES; scored re-runs fix only the winner's curse. Selected lr at a grid edge -> add the next half-decade. Top-2 val cells within 0.01 -> run both at seed 1001 and pick on the 2-seed mean. Tie margin 0.005 -> 0.01.",
+    "F4 R = minimum over populations favours SURVIVES. Report D against every measured population.",
+    "F5 State that the 90% two-sided CI is a 5% one-sided test per direction; Q1 is the only confirmatory test."
+  ],
+  "notes": "Seed SD for the backprop arms is plausibly 0.005-0.02. The test set is fixed, so the noise is init and order only. Dust may vary more, hence the max() rule. SD 0.01, n=5, n_R=3 gives a CI half-width of about 0.016 (0.03 at SD 0.02). With a measured gap of 0.05 or more, every label is reachable. Q0 is likely to bind."
+}

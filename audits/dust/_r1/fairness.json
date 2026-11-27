@@ -1,0 +1,17 @@
+{
+  "lens": "fairness-to-authors",
+  "verdict": "LICENSED_WITH_FIXES",
+  "blocking": [
+    "Section 7 drift handling: if ANCHOR DRIFT goes in backprop's favour (B0 better than the paper's SGD number, e.g. from fp32 CPU vs bf16 GPU), a REVERSED or SHRINKS label would partly reflect the environment, not the tuning. Pre-register a drift-robust estimate as well, D_rel = (mean B1 - mean B0) - (R - paper_SGD_bp), and allow REVERSED/SHRINKS only if both D and D_rel meet the rule. Otherwise downgrade to INCONCLUSIVE.",
+    "The reference baseline is ambiguous in Q0 and SHRINKS: 'paper's own 1M backprop numbers' and 'paper's backprop' could mean SGD or Adam (5.361 [U]). Fix it in advance to the backprop variant named in the paper's 1M sentence (P1 b), and state what happens if measured Dust beats SGD backprop but not Adam backprop."
+  ],
+  "fixes": [
+    "Make Q2 (batch 8, 61 steps, the authors' own framing) a required 5-seed scored arm, not optional, and report it next to Q1 in every headline. Without it, a Q1 result looks like a refutation of a claim the paper never made.",
+    "Rename or reword the labels so they name the change in the baseline. For example, 'REVERSED' could become 'BP-WITH-STANDARD-RECIPE AHEAD OF DUST'S MEASURED 1M VALUE'. The paper, per the notes, states its 1M advantage for the fitted limit and against its own SGD/Adam protocol.",
+    "In section 5, state plainly that B1 gets a search dimension Dust never had (batch / step count), plus a schedule, weight decay and clipping. Also state that Dust's grid size is unknown [U] until P1 c, and that Dust's population is tied to batch tokens, so Dust could not take the same batch reduction for free.",
+    "B1 per-group learning rates: declare them as following this model's lineage (rms-normed std-1 wte, value embeds, resid/x0 lambdas, softcap 15, relu^2: the nanochat style). Note that the embedding ratio of 10x peak (max 0.1) is below what that lineage uses (about 0.2-0.25 for embeddings). This arm may under-tune backprop, which favours Dust, so it is fair to the authors but not an upper bound. State that Muon is out of scope.",
+    "Choosing R as the best measured Dust population is a max over cells, and the released 32-checkpoint selection against B1's 5 also favours Dust. Keep both, and say so explicitly.",
+    "The section 2 statement about param groups is neutral as written. Keep 'not a claim about the paper's runs'. If B2 is skipped, add a line saying the effect of the missing groups on B0 and the anchor is unknown."
+  ],
+  "notes": "The audit tests a stronger-baseline question, not the paper's own claim, and the draft mostly says so: the Q0 MOOT gate, Q3 described as an extrapolation 'per the authors', matched-tokens caveats, and Dust not re-run, with R taken from the paper. The notes are too paraphrased to tell whether the paper claims a measured 1M advantage at all, so P1 (b) is load-bearing, and Q0 will most likely trigger MOOT unless measured 1M Dust cells beat backprop. Tuning hygiene is fair: 12 cells on val at seed 1000, scored seeds disjoint, test untouched during tuning. That 12-cell grid plus a batch axis is more tuning than SGD backprop got in the paper, and more than Dust's per-population (lr, momentum) grid if that grid is small. This is acceptable only because the question is explicitly 'a normally trained baseline', and it must stay prominent in the labels. The fp32 CPU vs bf16 GPU gap is real and is only annotated, not corrected; hence the D_rel fix."
+}

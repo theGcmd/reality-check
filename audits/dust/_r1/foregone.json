@@ -1,0 +1,19 @@
+{
+  "lens": "foregone",
+  "verdict": "LICENSED_WITH_FIXES",
+  "blocking": [
+    "Q0 comparator is undefined. 'the paper's own 1M backprop numbers' could mean SGD, Adam (5.361 [U]), or the per-population SGD values (notes say backprop was tuned 'per budget and population'). Q0 also has no rule for what counts as 'beats' (point estimate or seed spread). The answer changes the likely Q0 outcome: against the strongest paper backprop, MOOT is likely (~65-75%); against SGD alone it is near a coin flip, because at 10M the measured Dust 16k is tied with SGD (5.065 vs 5.066, 5.036 vs 5.015). Fix: comparator = min over the paper's measured 1M backprop variants at 8x512, and 'beats' = R + 0 < comparator by point estimate with the spread reported.",
+    "Add a separate Q0 outcome for the case where R beats SGD backprop but not the paper's own Adam backprop. In that case the paper has already reversed the claim, and B1 ending REVERSED is close to guaranteed. As written, this case either passes Q0 and gives a foregone REVERSED, or falls through without a rule.",
+    "The CI arithmetic is mis-specified. '(B1 seeds, s_R/n_R)' should use the variance term s_R^2/n_R (SE = s_R/sqrt(n_R)), with Welch-Satterthwaite df using n_B1-1 = 4 and n_R-1. If s_R is borrowed from B1, state n_R (= the paper's seed count) and the df.",
+    "The labels overlap. SHRINKS is a subset of SURVIVES, so state the precedence (SHRINKS replaces SURVIVES). Name the comparator in 'paper's backprop - R'; it must be the same one Q0 uses.",
+    "ANCHOR can be undefined. Our notes hold no 1M SGD backprop number, only Adam 5.361 at 1M, and the per-population SGD runs may have several values. Name the exact cell (the population/config the released defaults correspond to), and add a fallback: ANCHOR UNAVAILABLE, with Q1 labels carrying that caveat."
+  ],
+  "fixes": [
+    "Add a drift-adjusted sensitivity analysis: D' = D - (mean(B0) - paper_SGD_1M). Headline REVERSED only if both CI(D) and CI(D') have upper bound < 0. fp32/CPU training (vs bf16 embeddings with a wte lr of 1000 on GPU) can move both arms the same way, and a drift in B0's favour would inflate REVERSED.",
+    "Flag the case mean(B1) > paper backprop (tuned arm worse than the paper's own baseline). That points to an environment or implementation failure; it currently gets labelled SURVIVES.",
+    "Add a grid-edge rule: if the selected lr is 3e-4 or 1e-2, extend one step (x3) in that direction at the tuning seed.",
+    "Note that R = min over population cells carries a small winner's-curse bias toward SURVIVES. Report every population cell, not only the best one.",
+    "Q0 is most likely MOOT, yet the full B1 budget still runs for Q3. State this up front so the owner can decide on compute after P1."
+  ],
+  "notes": "No outcome is guaranteed or unreachable by construction once the comparator is fixed, though the odds are lopsided. The fitted limit 5.248 sits below every measured cell by construction (a*P^-b + c with a > 0). At 20M the same fit form puts the 16k cell about 0.37 above the limit, i.e. roughly 0.17 behind backprop. So measured 1M Dust most likely does not beat Adam backprop 5.361. Estimates: Q0 MOOT ~65-75%. Given Q0 passes: REVERSED ~55-70% (AdamW plus schedule with 8x more steps at b=1 vs a 61-step constant-lr baseline), INCONCLUSIVE ~15-25%, SURVIVES/SHRINKS ~10-25%. ANCHOR DRIFT ~30-50%; the 0.03 tolerance is reachable either way and is large relative to the SE of a 5-seed mean. The SHRINKS sign logic is correct: if Q0 passes then gap > 0, and SURVIVES gives D > 0. Code check: released B0 gives value_embeds and lambdas the base lr 0.175 (backprop.py:22-28), while Dust's 1M lrs are 0.225-0.25 (dust.py:48-56), so B0 is not identical to the paper's Dust recipe groups. That matters for ANCHOR, not for what can be reached."
+}

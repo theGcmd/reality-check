@@ -1,0 +1,1 @@
+{"threads": 2, "params": 37749776, "torch": "2.4.1+cu121", "host": "vm", "fwd_bwd_1seq_s": [3.2245447635650635, 2.934995651245117], "train_step_8seq_est_s": 23.479965209960938, "eval_fwd_4seq_s": 3.9659552574157715, "eval_full_544seq_est_s": 539.3699150085449}

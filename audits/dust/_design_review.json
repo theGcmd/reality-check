@@ -1,0 +1,122 @@
+{
+ "item": "DUST-1",
+ "step": "(a) design review r1",
+ "date_utc": "2026-11-27",
+ "prereg_reviewed": "audits/dust/PREREG.md r1 (draft, this commit)",
+ "round_verdict": "NOT_LICENSED (not foregone)",
+ "note": "All 5 lenses LICENSED_WITH_FIXES but 18 blocking items in total (same rule as TFPS r2: any blocking item -> round not licensed). Foregone lens: every outcome reachable, but Q0 MOOT estimated ~65-75% likely; conditional on Q0 passing, REVERSED ~55-70%. Fable lens: REVERSED near-foregone if Q0 passes, because B1 gets a batch/step axis Dust cannot have, so the batch-8 Q2 should carry the verdict on the paper claim. No runs; only CPU timing on random tokens.",
+ "blocking_consolidated": [
+  "Fix the backprop comparator G (SGD vs Adam 5.361 [U]) before reading P1; give Q0 an explicit rule plus a separate outcome for \"R beats SGD but not the paper's own Adam\" (foregone, leakage, fairness, Fable, statistics).",
+  "Fix R before P1: population 16384 or the one the paper's 1M sentence names, not min over populations (leakage, statistics, foregone).",
+  "CI fix: variance term s_R^2/n_R, Welch-Satterthwaite df; borrowed-SD rule s=max(SD B1, SD B0), df=4; n_R default 3; convert reported spreads to SD (statistics, foregone, Fable).",
+  "Label precedence REVERSED > SHRINKS > SURVIVES > INCONCLUSIVE; SHRINKS uses the same G (statistics, foregone).",
+  "Environment drift: drift-adjusted D' = D - (mean B0 - paper SGD 1M); REVERSED/SHRINKS/SURVIVES only if D and D' agree, else INCONCLUSIVE (environment-sensitive) (fairness, foregone, Fable, statistics).",
+  "Q2 (b=8, the paper's own framing) gets 5 scored seeds and carries the verdict on the paper claim; Q1 is worded as baseline strength; the Q2 tuning-seed fallback is removed (it would read test on a tuning run) (Fable, leakage, fairness).",
+  "Challenger = best-on-val of {B0 config, 12 B1 cells}, so bad AdamW tuning cannot manufacture SURVIVES; add a grid-edge rule (Fable, foregone, statistics; leakage prefers report-only, so it conflicts).",
+  "ANCHOR: name the exact paper cell, add ANCHOR UNAVAILABLE; band max(0.03, t*SE_A); anchor only on released-schedule seeds (33 val passes, not 32) (foregone, statistics, Fable, leakage)."
+ ],
+ "lenses": {
+  "answer_built_in_fable": {
+   "lens": "answer_built_in",
+   "model": "fable",
+   "verdict": "LICENSED_WITH_FIXES",
+   "blocking": [
+    "The only labelled verdict (Q1, PREREG s3/s7) gives backprop an axis Dust never had: batch 1/2/8, i.e. up to 488 updates vs 61 (s4 B1). Dust is not re-run and its population lives in the batch tokens (SOURCE_NOTES:36-38), so REVERSED is near-foregone if Q0 passes and says nothing about Dust at b<8. The batch-matched Q2 is unlabelled unless extra hours are approved (s7). Fix: Q2 (b=8) gets its own 5 scored seeds and carries the verdict on the paper's claim; Q1 is worded as a finding about baseline strength.",
+    "SURVIVES can be manufactured by bad tuning. Nothing requires B1 to beat the released recipe; SGD with wte lr 1000 (backprop.py:22-28) may beat every AdamW cell (max embedding lr 0.1). Then 'tuned backprop still worse than Dust' is labelled although B0 is better. Fix: challenger = best-on-val of {B0 config, 12 B1 cells} at seed 1000; add a pre-declared grid-edge rule (one extension, or label GRID-EDGE).",
+    "Q0 and SHRINKS reference 'the paper's 1M backprop numbers' without saying SGD or Adam (s3, s7). Whether Q1 exists at all can then be chosen after reading P1. Fix the comparator now (suggest: the paper's best 1M backprop, any optimizer), and resolve Q0 in the frozen text rather than leaving a branch.",
+    "Environment offset enters D directly: R is bf16/GPU, B1 is fp32/CPU (model.py:162-166, s6). ANCHOR DRIFT only adds a caveat, and the 0.03 tolerance is comparable to the whole effect (limit gap 0.113 [U]; measured gap smaller). B0 anchors SGD only; AdamW-sized updates on bf16 embeddings are the case most likely to differ. Fix: no SURVIVES/REVERSED unless |D| exceeds CI and |mean(B0) - paper SGD|; otherwise INCONCLUSIVE.",
+    "If the paper reports no spread, s_R := B1 seed SD (s7) borrows backprop's (likely smaller) variance for a zeroth-order method, forcing a decisive label. Fix: no label without a reported Dust spread, or a declared conservative s_R."
+   ],
+   "fixes": [
+    "Q3: D_lim CI must carry the limit's own 95% interval (5.17-5.30 [U]); otherwise B1 below 5.248 reads as a win over an extrapolation.",
+    "State SHRINKS/SURVIVES precedence; define n_R and whether R is best-population or 16,384.",
+    "B0 option (b) (5-point schedule) can fake ANCHOR DRIFT for constant-lr SGD; anchor on the released schedule. The released schedule is 33 val passes, not 32 (backprop.py:112,130).",
+    "P2: check data hashes against any paper-released config.json data_sha256; otherwise R may be on a different test set."
+   ],
+   "notes": "Not foregone by construction: tuning seed 1000 is disjoint from scored seeds, test is touched once, val (544x2048 tokens) exceeds train so selection noise is small, and the 5-point schedule can only hurt B1. Tuning budget is not unfair to Dust (per-population lr/momentum plus estimator constants, dust.py:47-73). All outcomes are reachable in principle, but Q0-MOOT looks likely: the notes give only a fitted limit at 1M, and at 10M the 38M-param column (8x512 by my count from model.py) has measured Dust 5.036 losing to backprop 5.015 [U]. If moot, about 20 CPU-h of B1 tuning serves an unlabelled Q3; the owner should decide after P1 whether that is worth running. CPU and CUDA generators give different inits for the same seed, so paper seeds cannot be matched; anchor on means only."
+  },
+  "fairness": {
+   "lens": "fairness-to-authors",
+   "verdict": "LICENSED_WITH_FIXES",
+   "blocking": [
+    "Section 7 drift handling: if ANCHOR DRIFT goes in backprop's favour (B0 better than the paper's SGD number, e.g. from fp32 CPU vs bf16 GPU), a REVERSED or SHRINKS label would partly reflect the environment, not the tuning. Pre-register a drift-robust estimate as well, D_rel = (mean B1 - mean B0) - (R - paper_SGD_bp), and allow REVERSED/SHRINKS only if both D and D_rel meet the rule. Otherwise downgrade to INCONCLUSIVE.",
+    "The reference baseline is ambiguous in Q0 and SHRINKS: 'paper's own 1M backprop numbers' and 'paper's backprop' could mean SGD or Adam (5.361 [U]). Fix it in advance to the backprop variant named in the paper's 1M sentence (P1 b), and state what happens if measured Dust beats SGD backprop but not Adam backprop."
+   ],
+   "fixes": [
+    "Make Q2 (batch 8, 61 steps, the authors' own framing) a required 5-seed scored arm, not optional, and report it next to Q1 in every headline. Without it, a Q1 result looks like a refutation of a claim the paper never made.",
+    "Rename or reword the labels so they name the change in the baseline. For example, 'REVERSED' could become 'BP-WITH-STANDARD-RECIPE AHEAD OF DUST'S MEASURED 1M VALUE'. The paper, per the notes, states its 1M advantage for the fitted limit and against its own SGD/Adam protocol.",
+    "In section 5, state plainly that B1 gets a search dimension Dust never had (batch / step count), plus a schedule, weight decay and clipping. Also state that Dust's grid size is unknown [U] until P1 c, and that Dust's population is tied to batch tokens, so Dust could not take the same batch reduction for free.",
+    "B1 per-group learning rates: declare them as following this model's lineage (rms-normed std-1 wte, value embeds, resid/x0 lambdas, softcap 15, relu^2: the nanochat style). Note that the embedding ratio of 10x peak (max 0.1) is below what that lineage uses (about 0.2-0.25 for embeddings). This arm may under-tune backprop, which favours Dust, so it is fair to the authors but not an upper bound. State that Muon is out of scope.",
+    "Choosing R as the best measured Dust population is a max over cells, and the released 32-checkpoint selection against B1's 5 also favours Dust. Keep both, and say so explicitly.",
+    "The section 2 statement about param groups is neutral as written. Keep 'not a claim about the paper's runs'. If B2 is skipped, add a line saying the effect of the missing groups on B0 and the anchor is unknown."
+   ],
+   "notes": "The audit tests a stronger-baseline question, not the paper's own claim, and the draft mostly says so: the Q0 MOOT gate, Q3 described as an extrapolation 'per the authors', matched-tokens caveats, and Dust not re-run, with R taken from the paper. The notes are too paraphrased to tell whether the paper claims a measured 1M advantage at all, so P1 (b) is load-bearing, and Q0 will most likely trigger MOOT unless measured 1M Dust cells beat backprop. Tuning hygiene is fair: 12 cells on val at seed 1000, scored seeds disjoint, test untouched during tuning. That 12-cell grid plus a batch axis is more tuning than SGD backprop got in the paper, and more than Dust's per-population (lr, momentum) grid if that grid is small. This is acceptable only because the question is explicitly 'a normally trained baseline', and it must stay prominent in the labels. The fp32 CPU vs bf16 GPU gap is real and is only annotated, not corrected; hence the D_rel fix."
+  },
+  "foregone": {
+   "lens": "foregone",
+   "verdict": "LICENSED_WITH_FIXES",
+   "blocking": [
+    "Q0 comparator is undefined. 'the paper's own 1M backprop numbers' could mean SGD, Adam (5.361 [U]), or the per-population SGD values (notes say backprop was tuned 'per budget and population'). Q0 also has no rule for what counts as 'beats' (point estimate or seed spread). The answer changes the likely Q0 outcome: against the strongest paper backprop, MOOT is likely (~65-75%); against SGD alone it is near a coin flip, because at 10M the measured Dust 16k is tied with SGD (5.065 vs 5.066, 5.036 vs 5.015). Fix: comparator = min over the paper's measured 1M backprop variants at 8x512, and 'beats' = R + 0 < comparator by point estimate with the spread reported.",
+    "Add a separate Q0 outcome for the case where R beats SGD backprop but not the paper's own Adam backprop. In that case the paper has already reversed the claim, and B1 ending REVERSED is close to guaranteed. As written, this case either passes Q0 and gives a foregone REVERSED, or falls through without a rule.",
+    "The CI arithmetic is mis-specified. '(B1 seeds, s_R/n_R)' should use the variance term s_R^2/n_R (SE = s_R/sqrt(n_R)), with Welch-Satterthwaite df using n_B1-1 = 4 and n_R-1. If s_R is borrowed from B1, state n_R (= the paper's seed count) and the df.",
+    "The labels overlap. SHRINKS is a subset of SURVIVES, so state the precedence (SHRINKS replaces SURVIVES). Name the comparator in 'paper's backprop - R'; it must be the same one Q0 uses.",
+    "ANCHOR can be undefined. Our notes hold no 1M SGD backprop number, only Adam 5.361 at 1M, and the per-population SGD runs may have several values. Name the exact cell (the population/config the released defaults correspond to), and add a fallback: ANCHOR UNAVAILABLE, with Q1 labels carrying that caveat."
+   ],
+   "fixes": [
+    "Add a drift-adjusted sensitivity analysis: D' = D - (mean(B0) - paper_SGD_1M). Headline REVERSED only if both CI(D) and CI(D') have upper bound < 0. fp32/CPU training (vs bf16 embeddings with a wte lr of 1000 on GPU) can move both arms the same way, and a drift in B0's favour would inflate REVERSED.",
+    "Flag the case mean(B1) > paper backprop (tuned arm worse than the paper's own baseline). That points to an environment or implementation failure; it currently gets labelled SURVIVES.",
+    "Add a grid-edge rule: if the selected lr is 3e-4 or 1e-2, extend one step (x3) in that direction at the tuning seed.",
+    "Note that R = min over population cells carries a small winner's-curse bias toward SURVIVES. Report every population cell, not only the best one.",
+    "Q0 is most likely MOOT, yet the full B1 budget still runs for Q3. State this up front so the owner can decide on compute after P1."
+   ],
+   "notes": "No outcome is guaranteed or unreachable by construction once the comparator is fixed, though the odds are lopsided. The fitted limit 5.248 sits below every measured cell by construction (a*P^-b + c with a > 0). At 20M the same fit form puts the 16k cell about 0.37 above the limit, i.e. roughly 0.17 behind backprop. So measured 1M Dust most likely does not beat Adam backprop 5.361. Estimates: Q0 MOOT ~65-75%. Given Q0 passes: REVERSED ~55-70% (AdamW plus schedule with 8x more steps at b=1 vs a 61-step constant-lr baseline), INCONCLUSIVE ~15-25%, SURVIVES/SHRINKS ~10-25%. ANCHOR DRIFT ~30-50%; the 0.03 tolerance is reachable either way and is large relative to the SE of a 5-seed mean. The SHRINKS sign logic is correct: if Q0 passes then gap > 0, and SURVIVES gives D > 0. Code check: released B0 gives value_embeds and lambdas the base lr 0.175 (backprop.py:22-28), while Dust's 1M lrs are 0.225-0.25 (dust.py:48-56), so B0 is not identical to the paper's Dust recipe groups. That matters for ANCHOR, not for what can be reached."
+  },
+  "leakage": {
+   "lens": "leakage/selection",
+   "verdict": "LICENSED_WITH_FIXES",
+   "blocking": [
+    "R is defined as the 'best population the paper measures' (sec 3, 7). If 'best' means lowest reported TEST loss across populations, R is a min over test means (selection on test, favouring Dust; biases toward SURVIVES/INCONCLUSIVE). Pre-specify R before P1 is read: the default population 16384 (or the population the paper's own 1M sentence names), with other populations reported descriptively only.",
+    "Q2 fallback is contradictory and biased: 'reported from the tuning seed only' needs test on a tuning run, which sec 5 says the wrapper refuses; and test at seed 1000 after picking lr on seed-1000 val carries the shared init/order noise used for selection. Either require fresh scored seeds for Q2 or report Q2 as val-only with no test number."
+   ],
+   "fixes": [
+    "Data split is clean by construction (prepare_data.py:62-77: skip 200k docs, 20.5M-token train pool, then val pool, then test pool, sequential stream, train_1M = first 488 rows). Under P2 also require manifest skipped_documents=200000, no --parquet, sha256 recorded, plus a cheap exact-row and 50-token-span hash overlap check train/val/test (FineWeb cross-dump near-duplicates); report, do not filter.",
+    "Eval-point asymmetry: B0 and Dust take best-of-32 val checkpoints, B1 best-of-5 at 60-100%. Correctly declared as hurting only B1, but then a SURVIVES label is partly protocol-driven; add that caveat to SURVIVES/INCONCLUSIVE text. (Val and test are independent ~1.1M-token sets, so best-of-k winner's-curse on test is small; the asymmetry is a budget, not a leak.)",
+    "B0 option (b) anchors on one seed vs the paper's multi-seed mean with a 0.03 tolerance; prefer (a), or the released schedule at >= the paper's seed count.",
+    "Pre-specify: lr ties within a batch (lowest val), and no grid extension if the optimum is at an edge (3e-4 or 1e-2); report edge hits.",
+    "Decide the 136-sequence tuning-val option before FREEZE, not after seeing costs on real data.",
+    "No run on the real P2 data (smoke tests included) may evaluate val or test before FREEZE; grad-accumulation self-test on random tokens only.",
+    "Accumulation: loss is per-token mean and all rows are full 2048 with no ignore_index, so sum(mean)/b equals the batched mean; clip once on the accumulated gradient, not per micro-batch. Steps/order identical across b (488/244/61 exact).",
+    "Q0/ANCHOR/SHRINKS: name which paper backprop number is the reference (SGD vs Adam at 1M); choosing after P1 is a selection.",
+    "P1(d): also record whether test informed any paper choice (population, recipe constants, init scale) and Dust's grid size, so tuning budgets can be compared."
+   ],
+   "notes": "Seeds: tuning seed 1000 gives make_model(1000) and randperm(1001); scored 0-4 give init 0-4 and order 1-5, so tuning and scored seeds do not overlap in init or order. All arms share the same 488 training sequences by design, so 'disjoint' here only guards against lucky init or order, which is the right scope. Test is touched once per scored run, at the val-selected checkpoint, as in the repo. No arm sees test during selection, given the blocking fixes on R and Q2."
+  },
+  "statistics": {
+   "lens": "statistics",
+   "verdict": "LICENSED_WITH_FIXES",
+   "blocking": [
+    "S1 Borrowed s_R breaks Welch (same SD in both terms). Rule: reported s_R -> SE=sqrt(s_B1^2/5+s_R^2/n_R), Welch-Satterthwaite df; borrowed -> s:=max(SD(B1),SD(B0)), SE=s*sqrt(1/5+1/n_R), df=4; n_R unreported -> 3.",
+    "S2 Convert P1 spread to an SD: SE*sqrt(n); t-CI half-width h*sqrt(n)/t_{(1+L)/2,n-1}; bootstrap/normal CI h*sqrt(n)/z; min-max only range/2. Record in PAPER_EXTRACT.md.",
+    "S3 Label precedence, and which backprop: G := the paper's measured 1M backprop from the same comparison as R. Check in order: REVERSED (CI_hi<0); SHRINKS (CI_lo>0 and D<=0.5(G-R)); SURVIVES (CI_lo>0); else INCONCLUSIVE. If G-R < 2*s_R/sqrt(n_R), no SHRINKS; report D/(G-R).",
+    "S4 No reference data hashes, so our test set may differ from the paper's (a shift of about 0.01-0.02, as large as the effect). Under DRIFT also compute D'=D-A with A=mean(B0)-P_SGD and SE'=sqrt(SE^2+SE_B0^2+s_P^2/n_P). If the labels from D and D' differ -> INCONCLUSIVE (environment-sensitive)."
+   ],
+   "fixes": [
+    "F1 ANCHOR OK iff |A| <= max(0.03, t_{0.95,df}*SE_A). At seed SD 0.03 a fixed 0.03 band gives a false DRIFT about 17% of the time.",
+    "F2 B0 option (b): anchor only on released-schedule seeds; if n=1, borrow the SD of B0's 5-point seeds (df=4).",
+    "F3 Mis-selection biases toward SURVIVES; scored re-runs fix only the winner's curse. Selected lr at a grid edge -> add the next half-decade. Top-2 val cells within 0.01 -> run both at seed 1001 and pick on the 2-seed mean. Tie margin 0.005 -> 0.01.",
+    "F4 R = minimum over populations favours SURVIVES. Report D against every measured population.",
+    "F5 State that the 90% two-sided CI is a 5% one-sided test per direction; Q1 is the only confirmatory test."
+   ],
+   "notes": "Seed SD for the backprop arms is plausibly 0.005-0.02. The test set is fixed, so the noise is init and order only. Dust may vary more, hence the max() rule. SD 0.01, n=5, n_R=3 gives a CI half-width of about 0.016 (0.03 at SD 0.02). With a measured gap of 0.05 or more, every label is reachable. Q0 is likely to bind."
+  }
+ },
+ "decisions_needed": [
+  "B0 eval schedule (a) released 5 seeds ~26 h, or (b) seed 0 only",
+  "Q2 5 seeds (+~5.8 h); lenses say required",
+  "optional B2 dust-groups arm",
+  "grid-edge rule: extend vs report (lenses split)",
+  "tuning-val subset of 136 sequences to save ~10 h",
+  "CPU budget ~31-46 h vs GPU",
+  "run B1 at all if Q0 comes out MOOT (only Q3 remains)"
+ ]
+}

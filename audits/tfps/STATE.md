@@ -74,3 +74,36 @@
 
 ## Patches in force
 - None used for scoring. Planned patches listed in PREREG.md §8.
+
+## 2026-11-27 ~06:15-07:00 UTC — step (b) close-out: r3 fixes applied → PREREG r3.1 (no new review round)
+- All 13 `fixes_before_freeze` items of `_design_review_r3.json` applied to PREREG.md (r3.1). Main changes:
+  - Q3 horizon fallback renamed `NOT CONSISTENT ACROSS TFPS ARMS (gauss, unit, zero)`; direction printed ("<X> AT BOTH
+    GAUSSIAN SCALES, <Y> WITH D = 0"); "Q2 detects no D effect" note; new rule 0: baseline BLOCKED → BLOCKED, TFPS arm
+    BLOCKED → `INCOMPLETE`. Owner decision 9 logic unchanged (rule 2 untouched).
+  - Published-lr and SELECTION-SENSITIVE qualifiers now on every horizon label; "holds" defined. Choice made here:
+    "identical label" compares base label AND per-arm contents (stricter than "base label"; flags more often).
+  - Non-gating baselines (checked m_{H,B} <= 0) removed from rules/qualifiers/trigger, Bonferroni k adapts,
+    DESCRIPTIVE ONLY if none; m_H fallback.
+  - FREEZE precondition widened: column headers + full ETTh1 H=192/336 rows (9 models) + input-length context.
+    "margins per unverified extract" dropped; if Gustav orders FREEZE without the check, only margin-free rules
+    (Fable wording incl. GAIN DETECTED OVER BOTH), all baselines gating "unverified", no anchor, no extension.
+  - Input-length qualifier on negative Q3 labels and TFPS ANCHOR DRIFT if the PDF shows (or can't settle) a searched L.
+  - D generator seeds 30000/40000+seed → 900000/910000+seed; seed-set disjointness self-test.
+  - Step (c) timing/self-test runs: seed 999, test-line filter, result files deleted; feas_*.log H=96 exposure disclosed.
+  - Unit-arm init numbers corrected (A 0.251/0.250, row range 0.005/0.008); s_unit = s_N01(z/sqrt 112); xavier note.
+  - Reachability numbers (Q2 sub-label, paired Q2b, n=4, n=10), r3 Monte Carlo figures, exact extension formula,
+    Q2b n after extension, k-failure suffix, glosses, base-label item rule, draw-averaged routing measurement,
+    pure-val-MSE candidate set + tie rule, instrumentation-unchanged self-test, DLinear-copy and float32 notes,
+    anchor variance + draw variance, arm-1 up to 100 epochs (budget now ~14-24 CPU-h at n = 5).
+- Also taken from lens text beyond the 13 items: anchor s^2 + mean draw variance; "Welch conservative under pairing";
+  lr grid as printed.
+- Transcription check by one subagent (not a review round): all 13 items APPLIED/PARTLY; its 5 inconsistency notes
+  (fallback trigger/gating, seed-set wording, Q2b rule 0, MC figures' rho, this STATE reference) fixed in the same step.
+- 0 runs. Nothing frozen. No test number seen.
+
+## Next
+1. Step (c): wrappers + self-tests (§8 list) + timing smoke at seed 999 with the test-line filter.
+2. Step (d) FREEZE only after the PDF check (headers, full H=192/336 rows, input-length context) is in PAPER_EXTRACT.md.
+
+## Patches in force
+- None used for scoring. Planned patches listed in PREREG.md §8.

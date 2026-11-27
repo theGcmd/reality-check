@@ -207,3 +207,12 @@ placement of α. None changes the arms above; listed for completeness.
 8. **Timing (owner):** TFPS work starts at 03:00 London on 2026-11-25. Until then the queue row stays BLOCKED and the
    loop works TIMEDISTILL-1; the reviewing chat flips the row to READY at 03:00. Then step (b): rewrite + review r2.
    Expected budget for this scope: about 10 CPU-h.
+
+## OWNER DECISIONS, round 2 (Gustav, 2026-11-27 00:25 London, on design review r2)
+
+9. **Add `tfps_gauss_unit`:** D ~ N(0, 1/(n·d)) (unit-scale columns, matching the repo's constraints), alongside
+   D_gauss N(0,1). A negative Q3 verdict (SHRINKS / VANISHES) may be stated only if it holds for every TFPS arm.
+10. **Paper access:** the reviewing chat commits the paper text (Alg. 1, the init sentences, Table 1 ETTh1 rows) to
+    `audits/tfps/PAPER_EXTRACT.md` once it can fetch arXiv 2410.09836. Round 3 (the last allowed) starts only after
+    that file exists, so the review can verify quotes and per-baseline margins.
+11. **Also report Q3 with the baselines at their published lr** (no extra runs; reporting only, not a verdict arm).

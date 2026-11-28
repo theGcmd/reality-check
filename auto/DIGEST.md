@@ -51,3 +51,6 @@ Newest entries at the bottom, under UTC date headings.
 - 18:12Z idle: queue blocked — TFPS-1 waits on the PDF check of Table 1 (FREEZE, step d); DUST-1 BLOCKED on P1/P2 + owner decisions; rows 3-4 PARKED. No owner commits since 15:19Z. setup.sh ok. No step taken, 0 runs.
 - reviewing chat (19:30 London): DUST-1 check P1 partially done → `audits/dust/PAPER_EXTRACT.md`. Page claims verbatim "At 100k and 1M tokens Dust ends below backprop, from a few hundred draws at 100k and from a thousand at 1M." but Table 1 (the measured cells) is not on the page and the repo has no results files. Runs audited (09:12-18:12Z): only audits/tfps, audits/dust, auto touched; 0 scored runs; no FREEZE yet.
 - 21:12Z idle: queue blocked — TFPS-1 waits on the PDF check of Table 1 (FREEZE, step d); DUST-1 BLOCKED (P1 partial at 19:32Z: Table 1 measured cells still missing; P2 data + owner decisions pending); rows 3-4 PARKED. No owner commits since 19:32Z. setup.sh ok. No step taken, 0 runs.
+
+## 2026-11-28
+- 00:12Z idle: queue blocked — TFPS-1 waits on the PDF check of Table 1 (FREEZE, step d); DUST-1 BLOCKED (P1 partial: Table 1 measured cells missing; P2 data + owner decisions pending); rows 3-4 PARKED. No owner commits since 2026-11-27 19:32Z. setup.sh ok. No step taken, 0 runs.

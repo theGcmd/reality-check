@@ -306,3 +306,30 @@
 
 ## Patches in force
 - Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
+
+## 2026-11-28 ~15:12-16:10 UTC — step (e) chunk 4: seed 42, H = 192
+- `frozen()` True before any scored call; driver/wrapper/PREREG unchanged since the FREEZE commit (git diff empty);
+  provenance `rc_commit` ae78f08, `rc_dirty` true only from untracked `runs/`.
+- Finished (10 runs): tfps_zero 192/42 (stop 24, ~6.2 min), tfps_gauss_unit 192/42 (stop 24, ~6.5 min), dlinear 192/42
+  lr 1e-4 / 5e-4 / 1e-3 / 5e-3 (all 4, ~2.7 min total), patchtst 192/42 lr 5e-3 / 1e-3 / 5e-4 (~3.8 / 3.2 / 5.9 min),
+  **tfps_gauss 192/42** in 3 resumable segments (`--budget 540`; epochs 1-37, 38-74, 75-100; ~25 min): stop 100,
+  released best epoch 81, pure-val-MSE best epoch 4, aux share of val loss at saved epoch 0.674, D rel change ~0.31-0.32,
+  max |D| end ~3.3-3.7. Same pattern as seed 2021 at H = 192.
+- Checks on all 10: per-window file N = 2689 float32, every Vali Loss in train.log finite (count = full epoch list:
+  dlinear 100/92/41/53, patchtst 52/29/32 — es.json still truncated at best epoch, known issue), no .pth; runs/ = 4.2 MB.
+- Not run: patchtst 192/42 lr 1e-4 (tool-cap decision pending).
+- Note: TFPS resume state lives in `work/ckpt/` (gitignored, lost with the container), so a tfps_gauss 192 run (~25 min)
+  must finish within one session; H = 336 gauss (~13 min) is easier.
+- Totals: **30 of 110 scored runs finished, 0 failed, 1 aborted (patchtst 192/2021 lr 1e-4).** No aggregation, no
+  comparison between arms, no test number read, no verdict.
+
+## Open issues
+- Unchanged: (1) PatchTST lr 1e-4 vs the 10-min tool cap (decision A/B in DIGEST) — now 3 runs waiting; (2) baseline
+  es.json val-list truncation (metadata fix decision).
+
+## Next
+- Chunk 5: seed 42, H = 336: tfps_zero + tfps_gauss_unit + dlinear grid + patchtst lr 5e-3/1e-3/5e-4 + tfps_gauss 336
+  (~13 min), all within one session (~45 min).
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).

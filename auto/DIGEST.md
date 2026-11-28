@@ -54,3 +54,4 @@ Newest entries at the bottom, under UTC date headings.
 
 ## 2026-11-28
 - 00:12Z idle: queue blocked — TFPS-1 waits on the PDF check of Table 1 (FREEZE, step d); DUST-1 BLOCKED (P1 partial: Table 1 measured cells missing; P2 data + owner decisions pending); rows 3-4 PARKED. No owner commits since 2026-11-27 19:32Z. setup.sh ok. No step taken, 0 runs.
+- reviewing chat (00:55 London, Gustav present): TFPS-1 Table 1 check DONE against arXiv HTML v2 → `audits/tfps/PAPER_EXTRACT.md` (headers + all 9 ETTh1 rows identical to the earlier extract; DLinear H=336 = 0.499; Table 1 fixed at L=96, the 96-512 search belongs to Sec. 4.4 / App. F). TFPS-1 unblocked: next step (d) FREEZE.

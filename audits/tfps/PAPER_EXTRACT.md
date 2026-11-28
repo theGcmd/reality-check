@@ -41,3 +41,25 @@ match this extract (0.499); treat both as unverified until checked against the P
 - Other variants (printed order, mapping unknown): 96: 0.401, 0.401, 0.414, 0.455, 0.503, 0.552; 192: 0.459, 0.451,
   0.460, 0.507, 0.535, 0.583; 336: 0.486, 0.494, 0.501, 0.539, 0.558, 0.591; 720: 0.492, 0.509, 0.500, 0.576, 0.583,
   0.594.
+
+## Table 1 check against the arXiv HTML version (reviewing chat, 2026-11-28 00:55 London; Gustav present)
+
+Source: https://arxiv.org/html/2410.09836v2 (300,093 characters; read in parts 0-100k and 100k-200k via WebFetch).
+The HTML renders Table 1 as a real table, so this supersedes the "reconstructed from garbled layout" caveat above.
+
+- **Column headers, as printed, in order:** IMP., TFPS (Our), TSLANet (2024), FITS (2024), iTransformer (2024),
+  TFDNet-IK (2023), PatchTST (2023), TimesNet (2023), DLinear (2023), FEDformer (2022). (The metric row has one more
+  "MSE" label than value columns; the extra label belongs to the IMP. column.)
+- **Caption (verbatim segments):** "Table 1: Multivariate long-term forecasting results with prediction lengths"
+  "H∈{24,36,48,60} for ILI and H∈{96,192,336,720} for others." "The input lengths are L=104 for ILI and L=96 for
+  others." "The best results are highlighted in bold and the second best are underlined."
+- **ETTh1 rows:** every value for all 9 models at H = 96 / 192 / 336 / 720 is **identical** to the table above (MSE and
+  MAE). No Avg row is printed for ETTh1. So DLinear H=336 MSE = 0.499 (the round-2 lens recollection of 0.481 is wrong).
+- **Input-length search:** the "searched input lengths among 96, 192, 336, and 512" sentences belong to Section 4.4
+  ("To ensure a fair comparison with foundation models, we searched input lengths among 96, 192, 336, and 512.") and
+  Appendix F.1 ("We searched for input length among 96, 192, 336, and 512."), i.e. the foundation-model / specific-
+  model comparisons (Table 7: TFPS ETTh1 MSE 0.372 / 0.401 / 0.409 / 0.423; Table 3 avg 0.401). **Table 1 is fixed at
+  L = 96**, which is what TFPS-1 tests.
+
+Conclusion for the FREEZE: the Table 1 headers and full ETTh1 H=192/336 rows are confirmed, and Table 1's input length
+is L=96. The DECISION NEEDED "PDF check" is resolved.

@@ -1,0 +1,23 @@
+{
+ "lr": 0.001,
+ "val_loss_min_repr": "1.2861093282699585",
+ "best_epoch": 4,
+ "stop_epoch": 4,
+ "val_losses": [
+  "1.6861552000045776",
+  "1.3058534860610962",
+  "1.2968720197677612",
+  "1.2861093282699585"
+ ],
+ "val_finite": true,
+ "n_windows": 2545,
+ "score_mse": 0.48046075407557853,
+ "score_mae": 0.4495051892786615,
+ "released_loader_score_mse": 0.4763854298126754,
+ "released_loader_rows": 2432,
+ "released_test_printed": {
+  "mae": 0.44511228799819946,
+  "mse": 0.47638562321662903
+ },
+ "checkpoint_sha256": "dc999a4579a49953f701a690f992d81e490dbdbc478b7f84dd4852b669404625"
+}

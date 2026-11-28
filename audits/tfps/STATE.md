@@ -279,3 +279,30 @@
 
 ## Patches in force
 - Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
+
+## 2026-11-28 ~12:12-12:50 UTC — step (e) chunk 3: seed 2021, H = 336
+- `frozen()` True before any scored call; driver/wrapper files unchanged since FREEZE (provenance `rc_commit` c3666b1,
+  `rc_dirty` true only from untracked `runs/`).
+- Finished (10 runs this chunk): tfps_zero 336/2021 (stop 22, ~6.8 min), tfps_gauss_unit 336/2021 (stop 22, ~6.5 min),
+  dlinear 336/2021 lr 1e-4 / 5e-4 / 1e-3 / 5e-3 (all 4, ~2 min total), patchtst 336/2021 lr 5e-3 / 1e-3 / 5e-4
+  (~2.4 / 2.5 / 3.4 min), **tfps_gauss 336/2021** in 2 resumable segments (`--budget 540`: epochs 1-32, 33-42; ~13 min).
+- tfps_gauss at H = 336 early-stopped at epoch 42 (released best epoch 22, pure-val-MSE best epoch 2), unlike H = 192
+  (100 epochs). Aux share of val loss at the saved epoch 0.012 (H = 192: 0.675); D relative change ~0.93 (time/freq),
+  max |D| at end ~1.55. Plausibly the H = 336 config's lr 5e-3 (vs 5e-4 at 192) decays the D constraint terms fast;
+  descriptive only, not checked further. Budget consequence: H = 336 gauss runs cost ~13 min, not ~30.
+- Checks on all 10: per-window file N = 2545, every Vali Loss in train.log finite (count per log = full epoch list,
+  baseline es.json still truncated at best epoch — known issue), no .pth in run dirs; runs/ = 2.8 MB.
+- Not run: patchtst 336/2021 lr 1e-4 (waits on the tool-cap decision; same issue as 192).
+- Totals: **20 of 110 scored runs finished, 0 failed, 1 aborted (patchtst 192/2021 lr 1e-4).** Seed 2021 complete
+  except the two patchtst lr 1e-4 runs. No aggregation, no comparison between arms, no test number read, no verdict.
+
+## Open issues
+- Unchanged: (1) PatchTST lr 1e-4 vs the 10-min tool cap (decision A/B in DIGEST); (2) baseline es.json val-list
+  truncation (metadata fix decision).
+
+## Next
+- Chunk 4: seed 42 (next in S = {2021, 42, 123, 456, 7}), H = 192: tfps_zero + tfps_gauss_unit + dlinear grid + patchtst lr
+  5e-3/1e-3/5e-4, then tfps_gauss 192 segments as time allows (~24 min; resumes across sessions).
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).

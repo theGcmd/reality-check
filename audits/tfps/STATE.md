@@ -203,3 +203,21 @@
    for all 9 models + input-length context) recorded in PAPER_EXTRACT.md, then recompute m_{H,B}, m_H, anchors.
    FREEZE should also add the measured budget line to PREREG §8 (transcription, not design).
 2. Then step (e) chunks via `run_battery.py` (first chunk suggestion: seed 2021 H=192, zero + unit + baselines).
+
+## 2026-11-28 ~03:12-03:30 UTC — step (d): FREEZE
+- Precondition met: Table 1 check recorded in `PAPER_EXTRACT.md` by the reviewing chat (00:55 London, Gustav present),
+  against the arXiv HTML v2 (disclosed in PREREG: not a cell-by-cell PDF comparison). Queue said next step (d).
+- PREREG.md r3.1 frozen in the commit `FREEZE tfps — ...`. Transcription-only changes: FREEZE record + disclosure at
+  the top; precondition status DONE (§ head); input-length qualifier resolved as NOT applied (Table 1 at L = 96);
+  m_{H,B} / m_H / anchors recomputed by script from the checked cells → unchanged (192: P 0.037, D 0.011, m_H 0.011
+  vs DLinear; 336: P 0.013, D 0.015, m_H 0.005 vs FITS); all four pairs gating; Q1-proper numbers in §2; measured
+  budget (~10-11 CPU-h at n = 5) in §8. No rule, threshold, arm, seed or selection changed.
+- New `frozen_margins.json` (margins, anchors, gating list, input-length flag) for the trigger / aggregation.
+- 0 scored runs. No H = 192 / 336 test number has been seen.
+
+## Next
+- Step (e) chunks via `run_battery.py` (driver now accepts seeds in S; check `frozen()` is True first). First chunk
+  suggestion (STATE c2): seed 2021, H=192: tfps_zero + tfps_gauss_unit (~13 min) + baseline lr grid (8 runs), within ~45 min.
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).

@@ -1,0 +1,63 @@
+{
+ "source": "PAPER_EXTRACT.md Table 1 ETTh1 MSE, checked vs arXiv HTML v2 (2026-11-28)",
+ "input_length": 96,
+ "input_length_qualifier": false,
+ "horizons": {
+  "192": {
+   "table1_mse": {
+    "TFPS": 0.423,
+    "TSLANet": 0.448,
+    "FITS": 0.445,
+    "iTransformer": 0.441,
+    "TFDNet_IK": 0.451,
+    "PatchTST": 0.46,
+    "TimesNet": 0.441,
+    "DLinear": 0.434,
+    "FEDformer": 0.441
+   },
+   "m_HB": {
+    "patchtst": 0.037,
+    "dlinear": 0.011
+   },
+   "m_H": 0.011,
+   "best_baseline": "DLinear",
+   "gating": [
+    "patchtst",
+    "dlinear"
+   ],
+   "anchors": {
+    "tfps": 0.423,
+    "patchtst": 0.46,
+    "dlinear": 0.434
+   }
+  },
+  "336": {
+   "table1_mse": {
+    "TFPS": 0.484,
+    "TSLANet": 0.491,
+    "FITS": 0.489,
+    "iTransformer": 0.491,
+    "TFDNet_IK": 0.495,
+    "PatchTST": 0.497,
+    "TimesNet": 0.491,
+    "DLinear": 0.499,
+    "FEDformer": 0.491
+   },
+   "m_HB": {
+    "patchtst": 0.013,
+    "dlinear": 0.015
+   },
+   "m_H": 0.005,
+   "best_baseline": "FITS",
+   "gating": [
+    "patchtst",
+    "dlinear"
+   ],
+   "anchors": {
+    "tfps": 0.484,
+    "patchtst": 0.497,
+    "dlinear": 0.499
+   }
+  }
+ }
+}

@@ -1,4 +1,16 @@
-# TFPS audit — pre-registration r3.1 (DRAFT, not frozen; nothing below has been scored)
+# TFPS audit — pre-registration r3.1 — FROZEN 2026-11-28 (commit message `FREEZE tfps`; nothing below has been scored)
+
+**FREEZE record (2026-11-28 ~03:15 UTC, agent, step d).** This text is frozen. After this commit no rule, threshold,
+margin, arm, seed set or selection criterion changes; the battery driver refuses scored seeds if this file changes.
+Changes made at FREEZE are transcription only: (1) the FREEZE-precondition check is recorded as done (below);
+(2) m_{H,B}, m_H and the anchor values were recomputed from the checked cells — all unchanged, because every checked
+cell equals the earlier extract; (3) the §1 input-length qualifier is resolved as "not applied" (Table 1 is at L = 96);
+(4) the Q1 sentence in §2 and the budget in §8 now carry the step-(c) measurements. Frozen margins are also written to
+`audits/tfps/frozen_margins.json` for the extension trigger and the aggregation step.
+**Disclosure:** the precondition asked for a PDF check; it was done by the reviewing chat with Gustav present against
+the arXiv **HTML** rendering of v2 (a real table, not the fetch's garbled-PDF reconstruction), recorded in
+`PAPER_EXTRACT.md` (2026-11-28 00:55 London), and Gustav/the reviewing chat declared the precondition resolved and set
+the queue to "next step (d) FREEZE". The HTML and PDF of v2 were not compared cell by cell.
 
 Revision history: r1 (commit 3e62bbb) → NOT_LICENSED (FOREGONE), `_design_review.json`. r2 (commit 32c41b2) →
 NOT_LICENSED (1 blocking: D scale), `_design_review_r2.json`. r3 (commit bc7055d) applied OWNER DECISIONS 9-11 and
@@ -25,6 +37,11 @@ the checked cells (a transcription fix, not a design change). The agent does not
 REVERSED (U < 0 for some B), GAIN DETECTED OVER BOTH (L > 0 for both B) or INCONCLUSIVE (r3 Fable lens wording);
 every baseline is treated as gating (all extract margins are > 0), labelled "unverified"; Q2 only rules 0, 1, 2,
 4 and Q2b only rules 1, 2, 4; the anchor is not computed; the extension trigger is not applied (n = 5 only). (The r3 fallback "margins per unverified extract" is dropped.)
+**Precondition status at FREEZE: DONE** (see the FREEZE record above and `PAPER_EXTRACT.md`, "Table 1 check against
+the arXiv HTML version"): (a) headers in order TFPS, TSLANet, FITS, iTransformer, TFDNet-IK, PatchTST, TimesNet,
+DLinear, FEDformer; (b) all 9 ETTh1 rows at H = 192 / 336 identical to the extract; (c) Table 1 is at L = 96 (the
+96-512 search belongs to Sec. 4.4 / App. F.1, Table 7). So the margin-dependent rules apply with the margins in §1
+as written, every baseline listed is gating (all m_{H,B} > 0), and the "cannot be done" fallback above does not apply.
 
 ## 1. What the paper claims (ETTh1, Table 1, single runs, no error bars) [E]
 - Table 1 caption: "The input lengths are L = 104 for ILI and L = 96 for others." The appendix also says input
@@ -35,12 +52,15 @@ every baseline is treated as gating (all extract margins are > 0), labelled "unv
   SHRINKS, per arm and horizon) and every TFPS `ANCHOR DRIFT` flag gets "— paper's TFPS values may come from an
   input-length search (L ∈ {96,192,336,512}); m_{H,B} may include an input-length gain not tested here". If the
   check finds the TFPS values are at L = 96, no qualifier. No change to the arms either way.
+  **FREEZE: the check found Table 1 at L = 96 ("The input lengths are L=104 for ILI and L=96 for others"; the
+  input-length search is the Sec. 4.4 / App. F.1 study) → the input-length qualifier is NOT applied.**
 - ETTh1 MSE [E]: TFPS 0.423 / 0.484 (H = 192 / 336); PatchTST 0.460 / 0.497; DLinear 0.434 / 0.499; best of all
   Table 1 baselines 0.434 (DLinear) at H=192 and 0.489 (FITS) at H=336.
 - **Per-baseline claimed margins (Q3 gates):** m_{H,B} = paper(B) − paper(TFPS):
   m_{192,PatchTST} = 0.037, m_{192,DLinear} = 0.011, m_{336,PatchTST} = 0.013, m_{336,DLinear} = 0.015.
   All are > 0, so the paper claims a gain over both baselines at both horizons. (The r2 fairness lens recalled
   DLinear ≈ 0.481 at H=336 from other papers' tables; the extract gives 0.499; the FREEZE check settles it.)
+  **FREEZE: checked cells confirm DLinear H=336 = 0.499; all four m_{H,B} recomputed and unchanged.**
 - **Non-gating baselines (checked m_{H,B} ≤ 0).** A baseline B with checked m_{H,B} ≤ 0 at horizon H is a baseline
   the paper does not claim to beat there. At that H, B is **removed** from Q3 rules 1-4, from the horizon label and
   its qualifiers, and from the extension trigger; "some B" and "both B" range over the remaining (gating)
@@ -65,6 +85,8 @@ every baseline is treated as gating (all extract margins are > 0), labelled "unv
   (`exp/exp_main.py:12`) and unused (the EDESC k-means + SVD init pipeline is present only as unused imports). `Cluster.py` follows EDESC closely (its
   commented-out `self.D = Parameter(torch.Tensor(n_z, n_clusters))` at :27; "Eq 9/12/13/15/16" comments). On this
   machine 3 fresh processes gave 4586-4635 NaN entries of 12544 (Q1; N = 10 log produced in step (c)).
+  Step (c) Q1 proper (`q1_released.py`, released pipeline, H=192 argv): 10/10 fresh processes gave a non-finite D
+  (time-D 616-736 of 12544 entries; freq-D 0 in 9, 683 in 1), `selftest/Q1_proper.json`. Descriptive only.
 - Affinity (`Cluster.py:61-69`): s_i = (‖z·D_i‖² + η·d) / ((η+1)·d), each row normalised to sum 1; η = 5
   (`run_longExp.py:84`), η·d = 140. With D = 0, s is exactly 1/n and ∂loss/∂D = 0 through KL and both constraints
   (measured by the r2 foregone lens: grad exactly 0), so D stays 0 (Adam, no weight decay, `exp_main.py:55`).
@@ -382,6 +404,10 @@ likely 30-60 epochs for arms 2-3 and up to the full 100 epochs for arm 1 (its va
 constraint term) → ~11-19 CPU-h; eval passes (5 draws + noise-off + val-MSE checkpoint) ≈ +0.5 CPU-h; baselines
 2 × 2 × 5 × 4 lr = 80 runs, small models at L=96 → ~2-4 CPU-h. Total ≈ 14-24 CPU-h at n = 5; up to ~2× if the
 extension fires (likely: P(extend) ≈ 0.55-1 at σ_T ≥ 0.005, §7).
+**Measured in step (c) (seed 999, test lines filtered; transcribed at FREEZE):** TFPS ≈ 16-17 s/epoch incl. val +
+test passes; tfps_gauss H=192 ran all 100 epochs (~27 min/run); tfps_zero / tfps_gauss_unit stopped at 22-23 epochs
+(~6-8 min/run); PatchTST ≈ 7 s/epoch, DLinear < 1 s/epoch. Per seed per H ≈ 42-45 min TFPS → 30 TFPS runs ≈ 7-7.5
+CPU-h; baselines ≈ 2-3.5 CPU-h; eval ≈ 0.3 CPU-h → **≈ 10-11 CPU-h at n = 5**, up to ~2× with the extension.
 
 ## 9. Not claimed / not tested
 Other datasets; H = 96 / 720 (owner decision 6: cost, and the released H=96 config uses 16 experts, outside the

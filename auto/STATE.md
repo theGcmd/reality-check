@@ -1,3 +1,3 @@
 # Reality Check — loop state
 
-lock: none
+lock: 2026-11-28T06:12Z

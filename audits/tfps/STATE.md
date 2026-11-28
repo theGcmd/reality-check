@@ -333,3 +333,29 @@
 
 ## Patches in force
 - Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
+
+## 2026-11-28 ~18:12-19:00 UTC — step (e) chunk 5: seed 42, H = 336
+- `frozen()` True before any scored call; driver/wrapper/PREREG unchanged since the FREEZE commit (git diff empty);
+  provenance `rc_commit` b56ec31, `rc_dirty` true only from untracked `runs/`.
+- Finished (10 runs): tfps_zero 336/42 (stop 24, ~7.6 min), tfps_gauss_unit 336/42 (stop 22, ~7.0 min),
+  **tfps_gauss 336/42** in 2 resumable segments (`--budget 540`; epochs 1-31, 32-47; ~14 min): stop 47, released best
+  epoch 27, pure-val-MSE best epoch 3, aux share of val loss at saved epoch 0.005, D rel change ~0.94, max |D| end
+  ~1.35 / 0.96 — same pattern as seed 2021 at H = 336 (early stop, small aux share). dlinear 336/42 lr 1e-4 / 5e-4 /
+  1e-3 / 5e-3 (all 4, ~2 min total), patchtst 336/42 lr 5e-3 / 1e-3 / 5e-4 (~3.5 / 2.5 / 3.0 min).
+- Checks on all 10: per-window file N = 2545 float32, every Vali Loss in train.log finite (counts dlinear 62/62/48/35,
+  patchtst 34/25/30, tfps 47/22/24; baseline es.json still truncated at best epoch — known issue), no .pth; runs/ = 5.5 MB.
+- Not run: patchtst 336/42 lr 1e-4 (tool-cap decision pending).
+- Totals: **40 of 110 scored runs finished, 0 failed, 1 aborted (patchtst 192/2021 lr 1e-4).** Seeds 2021 and 42
+  complete except patchtst lr 1e-4 (4 cells waiting). No aggregation, no comparison between arms, no test number read,
+  no verdict.
+
+## Open issues
+- Unchanged: (1) PatchTST lr 1e-4 vs the 10-min tool cap (decision A/B in DIGEST) — now 4 runs waiting; (2) baseline
+  es.json val-list truncation (metadata fix decision).
+
+## Next
+- Chunk 6: seed 123, H = 192: tfps_gauss 192 first (~25 min, must finish in one session), then tfps_zero +
+  tfps_gauss_unit, then dlinear grid + patchtst lr 5e-3/1e-3/5e-4 as time allows (leftovers roll to the next chunk).
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).

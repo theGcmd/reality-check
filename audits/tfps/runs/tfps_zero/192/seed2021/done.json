@@ -1,0 +1,4 @@
+{
+ "stop_epoch": 23,
+ "early_stop": true
+}

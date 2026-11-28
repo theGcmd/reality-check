@@ -221,3 +221,32 @@
 
 ## Patches in force
 - Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
+
+## 2026-11-28 ~06:12-06:58 UTC — step (e) chunk 1: seed 2021, H = 192
+- `frozen()` True before any scored call. Driver/wrapper files unchanged since FREEZE (provenance `rc_commit` 93b0103,
+  `rc_dirty` true only because `runs/` was untracked during the runs).
+- Finished (9 of 110 planned runs at n = 5): tfps_zero 192/2021 (stop 23, one segment, ~6.0 min), tfps_gauss_unit
+  192/2021 (stop 23, ~5.8 min); dlinear 192/2021 at lr 1e-4, 5e-4, 1e-3, 5e-3 (all 4); patchtst 192/2021 at lr 5e-3,
+  1e-3, 5e-4 (~3.1 / 2.7 / 6.1 min). 0 failed runs; no .pth in run dirs; runs/ = 1.1 MB.
+- Not run this chunk: patchtst 192/2021 lr 1e-4 (could exceed the 10-min tool cap; baselines don't resume) and
+  tfps_gauss 192/2021 (~27-30 min, needs a session of its own, resumable by `--budget`).
+- No aggregation, no comparison between arms, no verdict computed (step f/g come later).
+
+## Open issue found this chunk (engineering, metadata only; no code changed after FREEZE)
+- **Baseline `es.json` / metrics.json truncate the val-loss list at the best epoch.** `rc_patchtst.py:48-55`
+  (RCEarlyStopping) dumps es.json only when the checkpoint improves, so metrics.json `val_losses`, `stop_epoch` and
+  `val_finite` cover epochs 1..best, not 1..stop. Evidence: patchtst lr1e-3 es_len 7 vs 27 epochs in train.log;
+  lr5e-3 10 vs 30; lr5e-4 39 vs 59; dlinear lr1e-4 87 vs 100, 5e-4 40 vs 60, 1e-3 24 vs 44, 5e-3 10 vs 30.
+  Selection inputs are unaffected (`val_loss_min_repr` and `best_epoch` are written at the improving epoch, which is
+  exactly what §5 selects on). The §5 rule "a run with any non-finite val loss cannot be selected" is NOT checked by
+  `val_finite` past the best epoch; checked by hand from train.log this chunk: all 7 runs print finite Vali Loss at
+  every epoch (0 non-numeric). The 2-epoch self-test could not catch it (best == stop).
+  Proposed fix (needs Gustav's OK, wrapper change after FREEZE): write the per-epoch val list every epoch; for runs
+  already finished, step (f) reads the full list from train.log (7-decimal print) as the second code path.
+
+## Next
+- Chunk 2 suggestion: patchtst 192/2021 lr 1e-4 (alone, timeout ≤ 590 s; if it times out, report and split
+  differently), then tfps_gauss 192/2021 with `--budget 540` segments (resumable) across the rest of the session.
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).

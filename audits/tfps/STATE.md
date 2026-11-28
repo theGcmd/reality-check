@@ -250,3 +250,32 @@
 
 ## Patches in force
 - Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
+
+## 2026-11-28 ~09:12-09:50 UTC — step (e) chunk 2: seed 2021, H = 192
+- `frozen()` True before any scored call; driver/wrapper files unchanged since FREEZE (provenance `rc_commit` 2452a59,
+  `rc_dirty` true only from untracked `runs/` and `aborted/`).
+- **tfps_gauss 192/2021 finished** in 3 resumable segments (`--budget 540`: 09:23-09:32, 09:32-09:41, 09:41-09:47Z;
+  epochs 1-38, 39-77, 78-100). stop 100, released-criterion best epoch 97, pure-val-MSE best epoch 3, aux share of val
+  loss at saved epoch 0.675, all 100 val losses / val MSEs finite (val loss 5.86 → 3.30). ~24 min. As PREREG §5 predicted.
+- **patchtst 192/2021 lr 1e-4 NOT finished: killed by the 10-min tool cap** (timeout 590 s at 09:22:55Z after 68 epochs,
+  ~8.7 s/epoch; lr 1e-4 has not early-stopped by epoch 68, so it needs up to ~14.5 min). Baseline runs do not resume
+  (`run_battery.py base` restarts from scratch), so this run cannot finish in a foreground call as the driver stands.
+  Not a "failed run" under §5 (no non-finite value; infrastructure kill). Partial log moved out of `runs/` to
+  `aborted/patchtst_192_seed2021_lr1e-4_toolcap_0913Z.log` (test lines not read); run dir removed so it can be re-run.
+- Totals: **10 of 110 scored runs finished, 0 failed, 1 aborted by tool cap.** Seed 2021 H=192 complete except patchtst
+  lr 1e-4. No aggregation, no comparison between arms, no verdict computed. No .pth in run dirs; runs/ = 1.5 MB.
+
+## Open issues
+- (new, blocking for PatchTST lr 1e-4 at every seed/H, likely 10 runs at n = 5) baseline runs longer than ~9.5 min can't
+  run under the tool cap. Options for Gustav: (A) OK a post-FREEZE engineering change giving `rc_patchtst.py` /
+  `run_battery.py base` per-epoch resume (as P7 for TFPS, with a bitwise self-test interrupted == uninterrupted);
+  (B) allow one background `nohup` process per session for these runs, polled in the foreground (protocol says
+  foreground only). Without a decision the agent keeps running everything else and leaves the lr 1e-4 runs for last.
+- (from chunk 1, still open) baseline es.json truncates the val-loss list at the best epoch — DECISION NEEDED in DIGEST.
+
+## Next
+- Chunk 3: seed 2021 H=336: tfps_zero + tfps_gauss_unit (~15 min) + dlinear lr grid (4) + patchtst lr 5e-3/1e-3/5e-4
+  (timeout ≤ 590 s each; any that hits the cap goes to `aborted/` and waits on the decision above).
+
+## Patches in force
+- Unchanged from step (c) part 2 (P1-P8, B1-B2; num_workers 0 via argv).
